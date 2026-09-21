@@ -16,8 +16,9 @@ show() { PROMPT='%F{yellow}%~%f %F{green}❯%f ' }
 # read a pdf as text in nvim: pdf FILE
 pdf() { pdftotext -layout "$1" - | nvim -R - }
 # view a fully rendered pdf inline (Ghostty kitty graphics): pdfv FILE [dpi]
+# 300 dpi so HiDPI downscales (sharp) instead of upscaling a low-res raster (blur).
 pdfv() {
   local d=$(mktemp -d)
-  pdftoppm -png -r "${2:-150}" "$1" "$d/p" && timg "$d"/p*.png
+  pdftoppm -png -r "${2:-300}" "$1" "$d/p" && timg -p k "$d"/p*.png
   rm -rf "$d"
 }
