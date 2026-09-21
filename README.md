@@ -17,7 +17,7 @@ Install on a new machine:
 
 ```sh
 git clone <repo> ~/dev/dots && ~/dev/dots/install.sh
-brew install fzf bat neovim poppler   # tools the functions call
+brew install fzf bat neovim poppler timg   # tools the functions call
 exec zsh
 ```
 
@@ -64,7 +64,8 @@ Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Chan
 | `alias cat='bat --style=plain'` | Colored cat. No line numbers or frame. Pipes still get raw text. Real cat: `command cat`. |
 | `export BAT_THEME=gruvbox-dark` | Match the terminal palette. |
 | `hide` / `show` | Toggle the path in this shell only. `hide` for recording, `show` to restore. Other tabs untouched. |
-| `pdf FILE` | Read a PDF as text in nvim. Needs poppler. Figures need `open FILE`. |
+| `pdf FILE` | Read a PDF as text in nvim, searchable. Needs poppler. |
+| `pdfv FILE [dpi]` | Fully rendered PDF pages inline, figures and tables. Ghostty kitty graphics. Needs poppler + timg. |
 
 ## fzf-herdr.zsh
 

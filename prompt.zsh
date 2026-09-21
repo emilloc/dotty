@@ -15,3 +15,9 @@ hide() { PROMPT='%F{green}❯%f ' }
 show() { PROMPT='%F{yellow}%~%f %F{green}❯%f ' }
 # read a pdf as text in nvim: pdf FILE
 pdf() { pdftotext -layout "$1" - | nvim -R - }
+# view a fully rendered pdf inline (Ghostty kitty graphics): pdfv FILE [dpi]
+pdfv() {
+  local d=$(mktemp -d)
+  pdftoppm -png -r "${2:-150}" "$1" "$d/p" && timg "$d"/p*.png
+  rm -rf "$d"
+}
