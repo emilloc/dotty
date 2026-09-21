@@ -19,6 +19,6 @@ pdf() { pdftotext -layout "$1" - | nvim -R - }
 # 300 dpi so HiDPI downscales (sharp) instead of upscaling a low-res raster (blur).
 pdfv() {
   local d=$(mktemp -d)
-  pdftoppm -png -r "${2:-300}" "$1" "$d/p" && timg -p k "$d"/p*.png
+  pdftoppm -png -r "${2:-300}" "$1" "$d/p" && timg "$d"/p*.png
   rm -rf "$d"
 }
