@@ -1,0 +1,7 @@
+onboarding = false
+
+[theme]
+name = "gruvbox"
+
+[theme.custom]
+panel_bg = "reset"
