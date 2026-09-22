@@ -80,6 +80,7 @@ Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Chan
 | `hide` / `show` | Toggle the path in this shell only. `hide` for recording, `show` to restore. Other tabs untouched. |
 | `pdf FILE` | Read a PDF as text in nvim, searchable. Needs poppler. |
 | `pdfv FILE [dpi]` | Fully rendered PDF pages inline, figures and tables. Ghostty kitty graphics. Needs poppler + timg. |
+| `export CDPATH=.:$HOME/dev` | `cd NAME` jumps to `~/dev/NAME` from anywhere. A dir in the cwd still wins first. |
 
 ## fzf-herdr.zsh
 

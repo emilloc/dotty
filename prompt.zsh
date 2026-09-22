@@ -22,3 +22,5 @@ pdfv() {
   pdftoppm -png -r "${2:-300}" "$1" "$d/p" && timg "$d"/p*.png
   rm -rf "$d"
 }
+# cd by project name from anywhere: cd NAME -> ~/dev/NAME. cwd wins first.
+export CDPATH=.:$HOME/dev
