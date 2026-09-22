@@ -22,5 +22,6 @@ pdfv() {
   pdftoppm -png -r "${2:-300}" "$1" "$d/p" && timg "$d"/p*.png
   rm -rf "$d"
 }
-# cd by project name from anywhere: cd NAME -> ~/dev/NAME. cwd wins first.
-export CDPATH=.:$HOME/dev
+# cd learns dirs you visit and jumps by partial name: cd feed -> most-used match.
+# --cmd cd replaces cd; a real path still cds normally, else it jumps. cdi = pick.
+eval "$(zoxide init zsh --cmd cd)"
