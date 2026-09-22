@@ -1,3 +1,8 @@
+# fzf shell keys: ctrl-r history, ctrl-t paste a path, alt-c cd into a dir
+source <(fzf --zsh)
+# file lists respect .gitignore (skips node_modules, .venv), include dotfiles
+export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git"'
+
 # fzf + herdr: pick a file, open it in a new herdr pane. Pane closes when the editor exits.
 # Usage: fe [fzf args]      Key: ctrl-o
 fe() {

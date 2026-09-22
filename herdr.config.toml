@@ -5,3 +5,6 @@ name = "gruvbox"
 
 [theme.custom]
 panel_bg = "reset"
+
+[advanced]
+scrollback_limit_bytes = 100000000

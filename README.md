@@ -17,7 +17,7 @@ Install on a new machine:
 
 ```sh
 git clone <repo> ~/dev/dotty && ~/dev/dotty/install.sh
-brew install fzf bat neovim poppler timg zoxide   # tools the functions call
+brew install fzf ripgrep bat neovim poppler timg zoxide   # tools the functions call
 exec zsh
 ```
 
@@ -28,6 +28,71 @@ exec zsh                        # zsh files
 # cmd+shift+,                   # ghostty, in the terminal window
 herdr server reload-config      # herdr
 ```
+
+## Keys
+
+Cheat sheet. Everything here works with the config as it is.
+
+`esc` then a key acts as `alt`+key. Ghostty's `macos-option-as-alt` is not set, so opt+letter types accents like `ç`.
+
+### Prompt line (zsh, emacs keys)
+
+| Key | Does |
+|---|---|
+| `opt+left` / `opt+right` | back / forward one word |
+| `ctrl-a` / `ctrl-e` | start / end of line |
+| `ctrl-w` | delete word before cursor |
+| `ctrl-u` | delete whole line |
+| `ctrl-k` | delete to end of line |
+| `ctrl-y` | paste what the last delete removed |
+| `ctrl-_` | undo |
+| `esc` `.` | insert last argument of previous command. Repeat to go further back. |
+| `ctrl-x ctrl-e` | edit the command in nvim. `:wq` runs it, `:cq` drops it. |
+| `ctrl-o` | `fe`: pick a file, open it in nvim (herdr split if inside herdr) |
+| `tab` | complete commands, subcommands, flags, paths |
+| ` cmd` (leading space) | run without saving to history |
+
+### fzf
+
+| Key / input | Does |
+|---|---|
+| `ctrl-r` | fuzzy search all history. Type pieces in any order: `ssh prod`, `curl 443 api`. |
+| `ctrl-t` | pick a file, paste its path at the cursor. Use mid-command: `v ` then `ctrl-t`. |
+| `esc` `c` | pick a directory, cd into it |
+| `v src/**` + `tab` | picker scoped to `src/`, pastes the pick in place. Works after any command. |
+| `cd **` + `tab` | pick a directory |
+| `kill ` + `tab` | pick a running process |
+| `ssh **` + `tab` | pick a host from `~/.ssh/config` and `known_hosts` |
+
+Inside the picker:
+
+| Input | Does |
+|---|---|
+| `'word` | exact match |
+| `!word` | exclude |
+| `^word` / `word$` | starts with / ends with, e.g. `.log$` |
+| `a \| b` | a or b |
+| `tab` / `shift-tab` | mark several items (`ctrl-t`, `**`) |
+| `ctrl-j` / `ctrl-k` | move down / up |
+
+### History and logs
+
+| Command | Does |
+|---|---|
+| `history -i 1` | every saved command with its date |
+| `history -i 1 \| rg docker` | search history non-interactively |
+| `cmd 2>&1 \| tee run.log` | see output live and keep a copy |
+| `v run.log` | read a log in nvim. `/` search, `n` next, `G` end, `q` quit. |
+
+### Jumping
+
+| Command | Does |
+|---|---|
+| `cd part` | zoxide: jump to the most-used dir matching `part` |
+| `cdi` | pick among zoxide's dirs with fzf |
+| `cd -` | back to the previous dir |
+
+Ghostty split keys are in the ghostty.config section. nvim keys are at the end of this file.
 
 ## ghostty.config
 
@@ -48,6 +113,7 @@ Goal: low eye strain over long sessions.
 | `window-padding-balance` | `true` | Even padding on both sides. |
 | `mouse-hide-while-typing` | `true` | Cursor off the text. |
 | `macos-titlebar-style` | `hidden` | No title bar, no traffic-light buttons. Window keeps its frame and rounded corners. Close with `cmd+w`. |
+| `scrollback-limit` | `100000000` | 100 MB of scrollback per split instead of 10 MB. Long logs stay scrollable. Inside herdr, herdr's scrollback applies instead. |
 | `copy-on-select` | `clipboard` | Selecting with the mouse copies to the system clipboard, as in wezterm and herdr. `true` would prefer a selection clipboard, which macOS does not have. |
 
 Hiding the titlebar costs you tabs. The window leaves the macOS native tab group, and every switching action rides on that group, so `cmd+1`…`cmd+9`, `cmd+shift+[`/`]`, `ctrl+tab` and the Window menu items all stop working. `cmd+t` still opens a tab you can never return to — treat it as broken. Verified on Ghostty 1.3.1.
@@ -74,6 +140,13 @@ Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Chan
 | `export LESS='-R -i -F -X'` | Pager keeps colors, ignores case, quits on short files, leaves output on screen. |
 | `export EDITOR=nvim` | Used by `fe` and git. nvim ships syntax colors for markdown. |
 | `bindkey -e` | Emacs keys. `EDITOR=nvim` otherwise flips zsh into vi mode and kills ctrl+a / ctrl+e. |
+| `HISTSIZE=1000000 SAVEHIST=1000000` | Keep about every command ever typed. The old limit of 1000 was already dropping history. |
+| `EXTENDED_HISTORY` | Save a timestamp with each command. `history -i 1` lists them all with dates. |
+| `SHARE_HISTORY` | Splits share one history live. Without it, parallel shells overwrite each other on exit. |
+| `HIST_IGNORE_DUPS` | Skip a command identical to the one just before it. |
+| `HIST_IGNORE_SPACE` | A command typed with a leading space is not saved. Use it for secrets. |
+| `compinit` + `matcher-list` | Tab completes subcommands and flags for git, brew and more. Case-insensitive. |
+| `ctrl-x ctrl-e` | Open the current command line in nvim. Save and quit runs it. Quit with `:cq` to discard it. |
 | `v() { nvim -R "$@" }` | Read-only viewer with colors. `q` quits. |
 | `alias cat='bat --style=plain'` | Colored cat. No line numbers or frame. Pipes still get raw text. Real cat: `command cat`. |
 | `export BAT_THEME=gruvbox-dark` | Match the terminal palette. |
@@ -88,6 +161,8 @@ Plain `fzf` only prints the pick. tmux popups need `--tmux`. herdr has no floati
 
 | Piece | What it does |
 |---|---|
+| `source <(fzf --zsh)` | fzf keys at the prompt: `ctrl-r` fuzzy history, `ctrl-t` paste a picked path, `alt-c` cd into a picked dir. `alt-c` = press `esc` then `c`, since `macos-option-as-alt` is not set. |
+| `FZF_DEFAULT_COMMAND` | `rg --files --hidden`: file lists respect `.gitignore`, so `node_modules` and `.venv` stay out. Dotfiles are in. |
 | `fe [fzf args]` | Pick a file. Inside herdr: open it in `$EDITOR` in a right split. The split closes when the editor exits. Outside herdr: open in the same pane. |
 | `ctrl-o` | Runs `fe` from the prompt. |
 | `fzf ... < /dev/tty` | fzf inside a zle widget needs stdin from the tty. |
@@ -101,6 +176,7 @@ herdr commands used: `herdr pane split <id> --direction right --cwd "$PWD" --foc
 |---|---|
 | `[theme] name = "gruvbox"` | herdr's own gruvbox UI. Sidebar gets its own shade, matches Ghostty's warm family. Alternates: `kanagawa`, `rose-pine`, `vesper`, `nord`. |
 | `[theme.custom] panel_bg = "reset"` | Keep the terminal area on the Ghostty background, not herdr's panel color. |
+| `[advanced] scrollback_limit_bytes = 100000000` | 100 MB scrollback per pane. herdr owns scrollback inside its panes, so Ghostty's limit does not reach there. `herdr config check` validates the key. |
 
 ## Habits that matter more than any setting
 
