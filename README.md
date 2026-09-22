@@ -1,4 +1,4 @@
-# dots
+# dotty
 
 Terminal setup for Ghostty + herdr + zsh. No plugin managers, no frameworks.
 
@@ -7,8 +7,8 @@ Terminal setup for Ghostty + herdr + zsh. No plugin managers, no frameworks.
 | File | Installed at | How |
 |---|---|---|
 | `ghostty.config` | `~/.config/ghostty/config` | symlink |
-| `prompt.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dots/prompt.zsh` |
-| `fzf-herdr.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dots/fzf-herdr.zsh` |
+| `prompt.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dotty/prompt.zsh` |
+| `fzf-herdr.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dotty/fzf-herdr.zsh` |
 | `herdr.config.toml` | `~/.config/herdr/config.toml` | copy (herdr keeps logs and sockets in that dir, so no symlink) |
 | `init.lua` | `~/.config/nvim/init.lua` | symlink |
 | `install.sh` | runs once | links the files above, appends `source` lines to `~/.zshrc`. Rerun safe. |
@@ -16,7 +16,7 @@ Terminal setup for Ghostty + herdr + zsh. No plugin managers, no frameworks.
 Install on a new machine:
 
 ```sh
-git clone <repo> ~/dev/dots && ~/dev/dots/install.sh
+git clone <repo> ~/dev/dotty && ~/dev/dotty/install.sh
 brew install fzf bat neovim poppler timg   # tools the functions call
 exec zsh
 ```
@@ -47,7 +47,21 @@ Goal: low eye strain over long sessions.
 | `window-padding-x/y` | `20` / `14` | Text off the window edge. |
 | `window-padding-balance` | `true` | Even padding on both sides. |
 | `mouse-hide-while-typing` | `true` | Cursor off the text. |
-| `macos-titlebar-style` | `tabs` | Tabs in the title bar. |
+| `macos-titlebar-style` | `hidden` | No title bar, no traffic-light buttons. Window keeps its frame and rounded corners. Close with `cmd+w`. |
+| `copy-on-select` | `clipboard` | Selecting with the mouse copies to the system clipboard, as in wezterm and herdr. `true` would prefer a selection clipboard, which macOS does not have. |
+
+Hiding the titlebar costs you tabs. The window leaves the macOS native tab group, and every switching action rides on that group, so `cmd+1`…`cmd+9`, `cmd+shift+[`/`]`, `ctrl+tab` and the Window menu items all stop working. `cmd+t` still opens a tab you can never return to — treat it as broken. Verified on Ghostty 1.3.1.
+
+Use splits instead. Ghostty draws them itself, so the titlebar is not involved:
+
+| Key | Does |
+|---|---|
+| `cmd+d` / `cmd+shift+d` | split right / down |
+| `cmd+[` / `cmd+]` | move between splits |
+| `cmd+opt+arrows` | move directionally |
+| `cmd+shift+enter` | zoom the current split |
+
+All defaults, nothing configured. To get tabs back, set `macos-titlebar-style = tabs` and accept the bar.
 
 Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Change only the `dark:` value.
 
