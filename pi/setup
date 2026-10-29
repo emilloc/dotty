@@ -1,0 +1,77 @@
+#!/bin/sh
+set -eu
+
+launcher=$0
+while [ -L "$launcher" ]; do
+    link=$(readlink "$launcher") || exit 1
+    case "$link" in
+        /*) launcher=$link ;;
+        *) launcher=${launcher%/*}/$link ;;
+    esac
+done
+root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
+extension=$root/pi-web-search
+
+managed_node=$HOME/.local/share/pi-node/current/bin
+if [ -x "$managed_node/node" ]; then
+    PATH=$managed_node:$PATH
+    export PATH
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+    printf 'Node.js 22.19 or newer is required.\n' >&2
+    exit 1
+fi
+if ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 19) ? 0 : 1)'; then
+    printf 'Node.js 22.19 or newer is required. Found %s.\n' "$(node --version)" >&2
+    exit 1
+fi
+if ! command -v npm >/dev/null 2>&1; then
+    printf 'npm is required to install the pinned Pi web dependencies.\n' >&2
+    exit 1
+fi
+
+if [ -x "$HOME/.pi/agent/bin/pi" ]; then
+    pi_command=$HOME/.pi/agent/bin/pi
+elif command -v pi >/dev/null 2>&1; then
+    pi_command=$(command -v pi)
+elif [ -x "$HOME/.local/bin/pi" ]; then
+    pi_command=$HOME/.local/bin/pi
+else
+    printf 'Pi 1.4.0 or newer is required.\n' >&2
+    exit 1
+fi
+pi_version=$("$pi_command" --version)
+if ! node -e 'const match = process.argv[1].match(/^v?(\d+)\.(\d+)\.(\d+)/); process.exit(match && (Number(match[1]) > 1 || (Number(match[1]) === 1 && Number(match[2]) >= 4)) ? 0 : 1)' "$pi_version"; then
+    printf 'Pi 1.4.0 or newer is required. Found %s.\n' "$pi_version" >&2
+    exit 1
+fi
+
+npm --prefix "$extension" ci \
+    --omit=dev \
+    --ignore-scripts \
+    --no-audit \
+    --no-fund
+
+"$pi_command" \
+    -e "$extension/index.ts" \
+    -e "$root/pi-binja-guard" \
+    --offline \
+    --list-models >/dev/null
+
+user_bin=$HOME/.local/bin
+launcher_link=$user_bin/pi-web
+mkdir -p "$user_bin"
+if [ -L "$launcher_link" ]; then
+    if [ "$(readlink "$launcher_link")" != "$root/pi-web" ]; then
+        printf '%s already points to another launcher. Remove it before rerunning setup.\n' "$launcher_link" >&2
+        exit 1
+    fi
+elif [ -e "$launcher_link" ]; then
+    printf '%s already exists and was not changed.\n' "$launcher_link" >&2
+    exit 1
+else
+    ln -s "$root/pi-web" "$launcher_link"
+fi
+
+printf 'Pi web baseline is ready. Run: pi-web\n'

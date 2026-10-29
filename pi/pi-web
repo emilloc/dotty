@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+
+launcher=$0
+while [ -L "$launcher" ]; do
+    link=$(readlink "$launcher") || exit 1
+    case "$link" in
+        /*) launcher=$link ;;
+        *) launcher=${launcher%/*}/$link ;;
+    esac
+done
+root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
+extension=$root/pi-web-search
+
+if [ ! -d "$extension/node_modules/ipaddr.js" ]; then
+    printf 'Pi web dependencies are missing. Run: %s/setup\n' "$root" >&2
+    exit 1
+fi
+
+if [ -x "$HOME/.pi/agent/bin/pi" ]; then
+    pi_command=$HOME/.pi/agent/bin/pi
+elif command -v pi >/dev/null 2>&1; then
+    pi_command=$(command -v pi)
+elif [ -x "$HOME/.local/bin/pi" ]; then
+    pi_command=$HOME/.local/bin/pi
+else
+    printf 'Pi was not found on PATH or in a standard user installation.\n' >&2
+    exit 1
+fi
+
+exec "$pi_command" \
+    -e npm:pi-permission-modes@2.7.2 \
+    -e npm:pi-task-checkpoint@0.1.1 \
+    -e "$extension/index.ts" \
+    "$@"

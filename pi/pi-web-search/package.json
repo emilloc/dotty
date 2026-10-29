@@ -1,0 +1,77 @@
+{
+  "name": "@arcanemachine/pi-web-search",
+  "version": "3.0.0-dotty.1",
+  "description": "Bounded web search and static document tools for Pi",
+  "author": "Nicholas Moen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arcanemachine/pi-web-search.git"
+  },
+  "homepage": "https://github.com/arcanemachine/pi-web-search#readme",
+  "bugs": {
+    "url": "https://github.com/arcanemachine/pi-web-search/issues"
+  },
+  "type": "module",
+  "keywords": [
+    "pi",
+    "pi-coding-agent",
+    "pi-extension",
+    "pi-package",
+    "web-search",
+    "duckduckgo",
+    "documents"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "image": "https://raw.githubusercontent.com/arcanemachine/pi-web-search/main/logo.jpg"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "watch": "tsc --watch --noEmit",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write index.ts \"src/**/*.ts\" \"test/**/*.ts\" package.json README.md AGENTS.md CHANGELOG.md",
+    "format:check": "prettier --check index.ts \"src/**/*.ts\" \"test/**/*.ts\" package.json README.md AGENTS.md CHANGELOG.md",
+    "test": "node --import tsx --test test/*.test.ts",
+    "prepublishOnly": "npm run format:check && npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "@sinclair/typebox": "^0.34.49",
+    "ipaddr.js": "2.5.0",
+    "jsdom": "^26.1.0",
+    "node-html-markdown": "^2.0.0"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^25.3.3",
+    "prettier": "^3.8.3",
+    "tsx": "^4.22.0",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "files": [
+    "index.ts",
+    "src",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE.md",
+    "logo.jpg"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
