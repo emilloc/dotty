@@ -15,8 +15,10 @@ exec zsh
 Ubuntu:
 
 ```sh
-sudo apt install zsh ripgrep bat poppler-utils timg fzf zoxide neovim wl-clipboard xclip
-sudo apt install ghostty                                  # 26.04 and newer. Older: see Linux notes
+sudo apt install zsh ripgrep bat poppler-utils timg fzf zoxide wl-clipboard xclip
+sudo snap install nvim --classic                          # apt neovim on 24.04 is too old
+sudo add-apt-repository ppa:mkasberg/ghostty-ubuntu       # 24.04. From 26.04 skip this line
+sudo apt update && sudo apt install ghostty
 curl -fsSL https://herdr.dev/install.sh | sh
 git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
 echo 'font-family = DejaVu Sans Mono' > ~/.config/ghostty/local
@@ -177,8 +179,8 @@ The goal is low eye strain over long sessions.
 
 ## Linux notes
 
-- Ubuntu ships Ghostty from 26.04. On older releases the Ghostty project points to a community .deb: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"`. `snap install ghostty --classic` also exists. Neither is maintained by the Ghostty project.
-- apt neovim is 0.9.5 on 24.04, which lacks `gcc`, and 0.6 on 22.04, which cannot load `init.lua`. `sudo snap install nvim --classic` installs a current one.
+- Ubuntu ships Ghostty from 26.04. On 24.04 the Ghostty project points to the `ghostty-ubuntu` PPA. It builds amd64 and arm64, up to Ghostty 1.3.1, the same version as the Mac. `snap install ghostty --classic` is an alternative with the same version and an arm64 build. Neither is maintained by the Ghostty project.
+- apt neovim is 0.9.5 on 24.04 and lacks `gcc`. The nvim snap is 0.12 and has an arm64 build.
 - Run `install.sh` before the first `zsh` start. zsh then finds a `.zshrc` and skips its new-user wizard.
 - Linux has no Menlo. The `local` file sets DejaVu Sans Mono, the font Menlo derives from. Without it, Ghostty uses its built-in JetBrains Mono.
 - The theme follows the GNOME appearance setting. Tabs work, because Ghostty draws its own tab bar. `macos-*` settings are ignored.
