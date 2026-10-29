@@ -9,7 +9,17 @@ export CLICOLOR=1
 [[ $OSTYPE == linux* ]] && alias ls='ls --color=auto'   # GNU ls ignores CLICOLOR
 export LESS='-R -i -F -X'
 export EDITOR=nvim
+# herdr and the zoxide installer live here. zsh does not read ~/.profile, which
+# is where Ubuntu adds this directory for bash. -U drops the duplicate on macOS.
+typeset -U path && path=(~/.local/bin $path)
 bindkey -e   # emacs keys; EDITOR=nvim otherwise flips zsh to vi mode
+# word jumps with alt+arrows and ctrl+arrows. Ghostty on Linux sends these xterm
+# codes and the emacs keymap leaves them unbound. On macOS Ghostty turns
+# opt+arrows into esc b / esc f itself, and the system owns ctrl+arrows.
+bindkey '^[[1;3D' backward-word
+bindkey '^[[1;3C' forward-word
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;5C' forward-word
 # history: keep ~everything, timestamped, shared live across splits.
 # A command typed with a leading space is not saved (use for secrets).
 HISTFILE=~/.zsh_history

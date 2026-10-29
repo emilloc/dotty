@@ -1,242 +1,192 @@
 # dotty
 
-Terminal setup for Ghostty + herdr + zsh. No plugin managers, no frameworks.
+Terminal setup for Ghostty, herdr, zsh and nvim on macOS and Ubuntu. Plain config files, no plugin managers.
 
-## Files
+## tl;dr
 
-| File | Installed at | How |
-|---|---|---|
-| `ghostty.config` | `~/.config/ghostty/config` | symlink |
-| `prompt.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dotty/prompt.zsh` |
-| `fzf-herdr.zsh` | sourced from `~/.zshrc` | `source /Users/emi/dev/dotty/fzf-herdr.zsh` |
-| `herdr.config.toml` | `~/.config/herdr/config.toml` | copy (herdr keeps logs and sockets in that dir, so no symlink) |
-| `init.lua` | `~/.config/nvim/init.lua` | symlink |
-| `install.sh` | runs once | links the files above, appends `source` lines to `~/.zshrc`. Rerun safe. |
-
-Install on a new machine:
+macOS:
 
 ```sh
-git clone <repo> ~/dev/dotty && ~/dev/dotty/install.sh
-brew install fzf ripgrep bat neovim poppler timg zoxide   # tools the functions call
+brew install fzf ripgrep bat neovim poppler timg zoxide
+git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
 exec zsh
 ```
 
-Apply changes:
+Ubuntu:
 
 ```sh
-exec zsh                        # zsh files
-# cmd+shift+,                   # ghostty, in the terminal window
-herdr server reload-config      # herdr
-```
-
-## Linux
-
-The zsh and nvim files work unchanged on Ubuntu. The expected setup is Ghostty on the Mac and `ssh` into the box. If the box has a display, Ghostty for Linux reads the same config file. Change `font-family` to a font that exists there.
-
-```sh
-sudo apt install zsh ripgrep bat poppler-utils timg fzf zoxide neovim
+sudo apt install zsh ripgrep bat poppler-utils timg fzf zoxide neovim wl-clipboard xclip
+sudo apt install ghostty                                  # 26.04 and newer. Older: see Linux notes
+curl -fsSL https://herdr.dev/install.sh | sh
 git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
-chsh -s "$(command -v zsh)"      # takes effect on the next login
+echo 'font-family = DejaVu Sans Mono' > ~/.config/ghostty/local
+chsh -s "$(command -v zsh)"                               # takes effect on the next login
 ```
 
-Run `install.sh` before the first `zsh` start, so zsh finds a `.zshrc` and skips its new-user wizard.
+Apply a change:
 
-Ubuntu 26.04 and newer: the apt line is enough. Ubuntu 24.04: apt neovim is 0.9.5, which lacks `gcc` and warns that it has no clipboard provider. Ubuntu 22.04: apt neovim 0.6 cannot load `init.lua`. On both, `sudo snap install nvim --classic` gives a current neovim.
+```
+exec zsh                       zsh files
+cmd+shift+,   ctrl+shift+,     ghostty on macOS / Linux
+herdr server reload-config     herdr
+```
 
-| Piece | On Linux |
-|---|---|
-| `bat` | apt installs the binary as `batcat`. `prompt.zsh` aliases `bat` to it, so `cat` stays colored. |
-| `ls` | GNU ls ignores `CLICOLOR`. `prompt.zsh` aliases `ls --color=auto` on Linux. |
-| `fzf --zsh` | apt fzf on 24.04 and older has no `--zsh`. `fzf-herdr.zsh` falls back to the two files the package ships. |
-| `TERM` | Ghostty sends `TERM=xterm-ghostty`. A box without that terminfo entry breaks `clear`, `less` and `nvim`. `ssh-terminfo` in `ghostty.config` installs the entry into `~/.terminfo` on the box on the first `ssh`. `sudo` does not read `~/.terminfo`. For root tools, run `infocmp -x xterm-ghostty \| sudo tic -x -` once on the box. |
-| nvim yank | nvim 0.10 and newer copies through OSC 52 when `SSH_TTY` is set, so `y` lands on the Mac clipboard. nvim 0.9 keeps yanks on the box. |
-| `pdfv` | Kitty graphics pass through ssh. If pages render as colored blocks, the box's timg is too old to detect Ghostty. Add `-p k` to the `timg` call. |
-| herdr | Run `herdr --remote <ssh-host>` on the Mac. On first use it installs herdr into `~/.local/bin` on the box. The server runs on the box, the UI uses the Mac's theme. `--session <name>` picks a named session. |
-| Ghostty and herdr configs | `install.sh` links and copies them on Linux too. Harmless without Ghostty. herdr reads the scrollback setting from the box's copy. |
+## Files
+
+```
+dotty/                how       installed at
+ghostty.config        symlink   ~/.config/ghostty/config
+                                ~/.config/ghostty/local        you write this one per machine, untracked
+init.lua              symlink   ~/.config/nvim/init.lua
+herdr.config.toml     copy      ~/.config/herdr/config.toml    a copy, because herdr writes logs next to it
+prompt.zsh            source    ~/.zshrc
+fzf-herdr.zsh         source    ~/.zshrc
+install.sh                      does all of the above. Safe to rerun.
+```
 
 ## Keys
 
-Cheat sheet. Everything here works with the config as it is.
+On macOS the option key types accents, so for an alt shortcut press `esc` and then the key. On Linux the alt key works directly.
 
-`esc` then a key acts as `alt`+key. Ghostty's `macos-option-as-alt` is not set, so opt+letter types accents like `ç`.
+Shell line:
 
-### Prompt line (zsh, emacs keys)
+```
+opt+left  opt+right   back / forward one word          Linux: alt+arrows or ctrl+arrows
+ctrl-a  ctrl-e        start / end of the line
+ctrl-w                delete the word before the cursor
+ctrl-u  ctrl-k        delete the whole line / to the end
+ctrl-y                paste what the last delete removed
+ctrl-_                undo
+esc .                 insert the last argument of the previous command. Repeat for older ones.
+ctrl-x ctrl-e         edit the line in nvim.  :wq runs it,  :cq drops it
+ctrl-o                fe: pick a file and open it in nvim. Inside herdr it opens in a right split.
+tab                   complete commands, subcommands, flags and paths
+ cmd                  a leading space keeps the command out of history. Use it for secrets.
+```
 
-| Key | Does |
-|---|---|
-| `opt+left` / `opt+right` | back / forward one word |
-| `ctrl-a` / `ctrl-e` | start / end of line |
-| `ctrl-w` | delete word before cursor |
-| `ctrl-u` | delete whole line |
-| `ctrl-k` | delete to end of line |
-| `ctrl-y` | paste what the last delete removed |
-| `ctrl-_` | undo |
-| `esc` `.` | insert last argument of previous command. Repeat to go further back. |
-| `ctrl-x ctrl-e` | edit the command in nvim. `:wq` runs it, `:cq` drops it. |
-| `ctrl-o` | `fe`: pick a file, open it in nvim (herdr split if inside herdr) |
-| `tab` | complete commands, subcommands, flags, paths |
-| ` cmd` (leading space) | run without saving to history |
+fzf:
 
-### fzf
+```
+ctrl-r                search history. Type pieces in any order:  ssh prod   or   curl 443 api
+ctrl-t                pick a file and paste its path. Example: type v and a space, then ctrl-t
+esc c                 pick a directory and cd into it            Linux: alt+c
+v src/**<tab>         picker scoped to src/. The pick lands in place.
+cd **<tab>            pick a directory
+kill <tab>            pick a process
+ssh **<tab>           pick a host from ~/.ssh/config
 
-| Key / input | Does |
-|---|---|
-| `ctrl-r` | fuzzy search all history. Type pieces in any order: `ssh prod`, `curl 443 api`. |
-| `ctrl-t` | pick a file, paste its path at the cursor. Use mid-command: `v ` then `ctrl-t`. |
-| `esc` `c` | pick a directory, cd into it |
-| `v src/**` + `tab` | picker scoped to `src/`, pastes the pick in place. Works after any command. |
-| `cd **` + `tab` | pick a directory |
-| `kill ` + `tab` | pick a running process |
-| `ssh **` + `tab` | pick a host from `~/.ssh/config` and `known_hosts` |
+inside the picker
+'word  exact      !word  exclude      ^word  starts with      word$  ends with      a | b  either
+tab / shift-tab   mark several        ctrl-j / ctrl-k   down / up
+```
 
-Inside the picker:
+History and logs:
 
-| Input | Does |
-|---|---|
-| `'word` | exact match |
-| `!word` | exclude |
-| `^word` / `word$` | starts with / ends with, e.g. `.log$` |
-| `a \| b` | a or b |
-| `tab` / `shift-tab` | mark several items (`ctrl-t`, `**`) |
-| `ctrl-j` / `ctrl-k` | move down / up |
+```
+history -i 1                   every saved command, with dates
+history -i 1 | rg docker       search it
+cmd 2>&1 | tee run.log         watch live and keep a copy
+v run.log                      read it in nvim:   / search   n next   G end   q quit
+```
 
-### History and logs
+Jumping:
 
-| Command | Does |
-|---|---|
-| `history -i 1` | every saved command with its date |
-| `history -i 1 \| rg docker` | search history non-interactively |
-| `cmd 2>&1 \| tee run.log` | see output live and keep a copy |
-| `v run.log` | read a log in nvim. `/` search, `n` next, `G` end, `q` quit. |
+```
+cd part        zoxide: the most used directory matching part
+cdi            pick among zoxide's directories
+cd -           the previous directory
+```
 
-### Jumping
+Ghostty splits and tabs, all default bindings:
 
-| Command | Does |
-|---|---|
-| `cd part` | zoxide: jump to the most-used dir matching `part` |
-| `cdi` | pick among zoxide's dirs with fzf |
-| `cd -` | back to the previous dir |
+```
+                  macOS                 Linux
+split right       cmd+d                 ctrl+shift+o
+split down        cmd+shift+d           ctrl+shift+e
+move              cmd+[   cmd+]         ctrl+alt+arrows
+move by direction cmd+opt+arrows
+zoom a split      cmd+shift+enter       ctrl+shift+enter
+new tab           broken, see below     ctrl+shift+t
+go to tab                               alt+1 to alt+9
+close             cmd+w                 ctrl+shift+w
+copy / paste      cmd+c   cmd+v         ctrl+shift+c   ctrl+shift+v
+```
 
-Ghostty split keys are in the ghostty.config section. nvim keys are at the end of this file.
+nvim, built in:
+
+```
+gcc                toggle a comment.  gc + motion for a range, gcip for a paragraph
+ctrl-n  ctrl-p     complete a word from open buffers, in insert mode
+:find name<tab>    open a file by name from anywhere in the project
+:Explore           directory listing
+q                  quit a read-only buffer. fe and v open files that way.
+```
+
+Recording a demo:
+
+```
+hide     take the path off the prompt, in this shell only
+clear    wipe the "Last login" line
+show     put the path back
+```
 
 ## ghostty.config
 
-Goal: low eye strain over long sessions.
+The goal is low eye strain over long sessions.
 
-| Setting | Value | Why |
-|---|---|---|
-| `theme` | `dark:Gruvbox Material Dark,light:Gruvbox Material Light` | Warm, low-saturation palette. Follows macOS appearance. Light mode reads better in a lit room, dark mode in a dim one. |
-| `font-family` | `Menlo` | Only monospace font installed. Swap when you add one. |
-| `font-size` | `15` | Larger glyphs, less squinting. |
-| `adjust-cell-height` | `30%` | More line spacing. Less eye travel per line. |
-| `font-thicken` | `false` | No artificial bolding. Thinner strokes glow less on dark bg. |
-| `bold-is-bright` | `false` | Bold keeps its color. No white flashes. |
-| `minimum-contrast` | `1.3` | Dim grey text stays readable. |
-| `cursor-style` | `bar` | Smaller bright block in your fovea. |
-| `cursor-style-blink` | `false` | No periodic flicker. |
-| `window-padding-x/y` | `20` / `14` | Text off the window edge. |
-| `window-padding-balance` | `true` | Even padding on both sides. |
-| `mouse-hide-while-typing` | `true` | Cursor off the text. |
-| `macos-titlebar-style` | `hidden` | No title bar, no traffic-light buttons. Window keeps its frame and rounded corners. Close with `cmd+w`. |
-| `scrollback-limit` | `100000000` | 100 MB of scrollback per split instead of 10 MB. Long logs stay scrollable. Inside herdr, herdr's scrollback applies instead. |
-| `shell-integration-features` | `ssh-terminfo` | On the first `ssh` to a host, copy the `xterm-ghostty` terminfo there. Features not listed keep their defaults. See the Linux section. |
-| `copy-on-select` | `clipboard` | Selecting with the mouse copies to the system clipboard, as in wezterm and herdr. `true` would prefer a selection clipboard, which macOS does not have. |
-
-Hiding the titlebar costs you tabs. The window leaves the macOS native tab group, and every switching action rides on that group, so `cmd+1`…`cmd+9`, `cmd+shift+[`/`]`, `ctrl+tab` and the Window menu items all stop working. `cmd+t` still opens a tab you can never return to — treat it as broken. Verified on Ghostty 1.3.1.
-
-Use splits instead. Ghostty draws them itself, so the titlebar is not involved:
-
-| Key | Does |
-|---|---|
-| `cmd+d` / `cmd+shift+d` | split right / down |
-| `cmd+[` / `cmd+]` | move between splits |
-| `cmd+opt+arrows` | move directionally |
-| `cmd+shift+enter` | zoom the current split |
-
-All defaults, nothing configured. To get tabs back, set `macos-titlebar-style = tabs` and accept the bar.
-
-Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Change only the `dark:` value.
+- The theme is Gruvbox Material. It follows the OS appearance, light by day and dark at night. The palette is warm with low saturation. `Everforest Dark Hard` and `Zenburn` have the same warmth.
+- The font is Menlo at size 15 with 30% taller cells. Glyphs are bigger and lines sit further apart.
+- Font thickening is off, bold keeps its color, and the minimum contrast is 1.3. Bright strokes do not glow and dim grey text stays readable.
+- The cursor is a bar and does not blink, so nothing flickers in the center of your view.
+- Padding is 20 by 14 and balanced. The mouse pointer hides while you type.
+- The titlebar is hidden on macOS. This breaks tabs. The window leaves the macOS tab group, so `cmd+t` opens a tab you cannot return to, and `cmd+1` or `cmd+shift+[` do nothing. Use splits. To get tabs back, set `macos-titlebar-style = tabs`. Verified on Ghostty 1.3.1.
+- Scrollback is 100 MB per split instead of the default 10 MB. Inside herdr, herdr's own limit applies.
+- `copy-on-select = clipboard` puts a mouse selection in the system clipboard.
+- `shell-integration-features = ssh-terminfo` copies Ghostty's terminfo to a host on the first `ssh`, so `clear`, `less` and `nvim` work there.
+- `config-file = ?local` loads `~/.config/ghostty/local` when it exists. The file is untracked and holds per-machine values, such as the font on Linux.
 
 ## prompt.zsh
 
-| Line | Why |
-|---|---|
-| `source .../ghostty-integration` | Ghostty injects its shell integration only into the shell it spawns. `exec zsh` loses it. This line keeps cursor shape, prompt marks and the `ssh` terminfo wrapper after `exec zsh`. No-op outside Ghostty. |
-| `PROMPT='%F{yellow}%~%f %F{green}❯%f '` | Path and arrow only. No user@host. Yellow and green instead of blue. Blue text on dark bg is hardest to focus. |
-| `export CLICOLOR=1` | Colors in `ls` on macOS. On Linux an `ls --color=auto` alias does the same. |
-| `export LESS='-R -i -F -X'` | Pager keeps colors, ignores case, quits on short files, leaves output on screen. |
-| `export EDITOR=nvim` | Used by `fe` and git. nvim ships syntax colors for markdown. |
-| `bindkey -e` | Emacs keys. `EDITOR=nvim` otherwise flips zsh into vi mode and kills ctrl+a / ctrl+e. |
-| `HISTSIZE=1000000 SAVEHIST=1000000` | Keep about every command ever typed. The old limit of 1000 was already dropping history. |
-| `EXTENDED_HISTORY` | Save a timestamp with each command. `history -i 1` lists them all with dates. |
-| `SHARE_HISTORY` | Splits share one history live. Without it, parallel shells overwrite each other on exit. |
-| `HIST_IGNORE_DUPS` | Skip a command identical to the one just before it. |
-| `HIST_IGNORE_SPACE` | A command typed with a leading space is not saved. Use it for secrets. |
-| `compinit` + `matcher-list` | Tab completes subcommands and flags for git, brew and more. Case-insensitive. |
-| `ctrl-x ctrl-e` | Open the current command line in nvim. Save and quit runs it. Quit with `:cq` to discard it. |
-| `v() { nvim -R "$@" }` | Read-only viewer with colors. `q` quits. |
-| `alias bat=batcat` | Only when `batcat` exists. Ubuntu's apt package uses that name. |
-| `alias cat='bat --style=plain'` | Colored cat. No line numbers or frame. Pipes still get raw text. Real cat: `command cat`. |
-| `export BAT_THEME=gruvbox-dark` | Match the terminal palette. |
-| `hide` / `show` | Toggle the path in this shell only. `hide` for recording, `show` to restore. Other tabs untouched. |
-| `pdf FILE` | Read a PDF as text in nvim, searchable. Needs poppler. |
-| `pdfv FILE [dpi]` | Fully rendered PDF pages inline, figures and tables. Ghostty kitty graphics. Needs poppler + timg. |
-| `eval "$(zoxide init zsh --cmd cd)"` | zoxide replaces `cd`. Type part of any dir you have visited, `cd feed`, and it jumps to the most-used match. Real paths still cd normally. `cdi` opens an fzf picker. |
+- The prompt shows the path and `❯` in yellow and green. Blue on a dark background is the hardest color to focus on.
+- It sources Ghostty's shell integration again, so `exec zsh` keeps the cursor shape, the prompt marks and the `ssh` wrapper.
+- It puts `~/.local/bin` on PATH. herdr installs there, and zsh never reads the `~/.profile` where Ubuntu adds it.
+- Keys are emacs style. Without `bindkey -e`, `EDITOR=nvim` flips zsh into vi mode. Alt+arrows and ctrl+arrows jump by word. Linux needs that, because Ghostty binds opt+arrows only on macOS.
+- History keeps 1,000,000 commands with timestamps, shared live between splits. A command typed with a leading space is not saved. The old limit of 1000 was already dropping commands.
+- `compinit` completes git and brew subcommands on tab, case-insensitive.
+- `ls` is colored on both systems.
+- `v` opens a file read-only in nvim. `cat` is `bat` without a frame or line numbers, and `batcat` on Ubuntu. `LESS` keeps colors and quits on short files.
+- `pdf FILE` shows the text in nvim. `pdfv FILE [dpi]` renders the pages inline over kitty graphics at 300 dpi, so HiDPI screens downsample instead of blurring.
+- zoxide replaces `cd`.
 
 ## fzf-herdr.zsh
 
-Plain `fzf` only prints the pick. tmux popups need `--tmux`. herdr has no floating panes, so this uses a split instead.
-
-| Piece | What it does |
-|---|---|
-| `source <(fzf --zsh)` or the two package files | fzf older than 0.48 (Ubuntu apt) has no `--zsh`. The fallback sources `/usr/share/doc/fzf/examples/key-bindings.zsh` and `completion.zsh`. |
-| `source <(fzf --zsh)` | fzf keys at the prompt: `ctrl-r` fuzzy history, `ctrl-t` paste a picked path, `alt-c` cd into a picked dir. `alt-c` = press `esc` then `c`, since `macos-option-as-alt` is not set. |
-| `FZF_DEFAULT_COMMAND` | `rg --files --hidden`: file lists respect `.gitignore`, so `node_modules` and `.venv` stay out. Dotfiles are in. |
-| `fe [fzf args]` | Pick a file. Inside herdr: open it in `$EDITOR` in a right split. The split closes when the editor exits. Outside herdr: open in the same pane. |
-| `ctrl-o` | Runs `fe` from the prompt. |
-| `fzf ... < /dev/tty` | fzf inside a zle widget needs stdin from the tty. |
-| `stty discard undef` | macOS maps ctrl-o to `discard` and eats the key. |
-
-herdr commands used: `herdr pane split <id> --direction right --cwd "$PWD" --focus` and `herdr pane run <id> "<cmd>"`. `$HERDR_PANE_ID` is set inside a herdr pane.
+- It loads the fzf key bindings. apt ships an fzf older than 0.48, which has no `--zsh`, so on Ubuntu it sources the two files the package installs instead.
+- `FZF_DEFAULT_COMMAND` is `rg --files --hidden`, so file lists respect `.gitignore`.
+- `fe` picks a file and opens it in a herdr split on the right. The split closes with the editor. Outside herdr it opens in the same pane. `ctrl-o` runs it. `stty discard undef` is there because macOS eats `ctrl-o`.
 
 ## herdr.config.toml
 
-| Setting | Why |
-|---|---|
-| `[theme] name = "gruvbox"` | herdr's own gruvbox UI. Sidebar gets its own shade, matches Ghostty's warm family. Alternates: `kanagawa`, `rose-pine`, `vesper`, `nord`. |
-| `[theme.custom] panel_bg = "reset"` | Keep the terminal area on the Ghostty background, not herdr's panel color. |
-| `[advanced] scrollback_limit_bytes = 100000000` | 100 MB scrollback per pane. herdr owns scrollback inside its panes, so Ghostty's limit does not reach there. `herdr config check` validates the key. |
-
-## Habits that matter more than any setting
-
-- macOS light appearance during the day, dark at night. Ghostty follows it.
-- Night Shift on a sunset schedule.
-- Screen brightness matched to the room.
+- The theme is gruvbox and the terminal area keeps Ghostty's background. Scrollback is 100 MB per pane. `herdr config check` validates the file.
 
 ## init.lua
 
-| Line | Why |
-|---|---|
-| `termguicolors = false` | nvim's default scheme paints its own truecolor white-on-black. Off, it uses the terminal's 16 ANSI colors, so it matches Ghostty and follows light/dark. |
-| `pcall(vim.cmd, "colorscheme vim")` | Classic scheme, built for 16 colors. `pcall` because nvim older than 0.10 has no scheme by that name, already looks like it, and a failed `colorscheme` would abort the rest of the file. |
-| `wrap`, `linebreak`, `breakindent` | Long prose lines wrap at words and keep indent. |
-| `scrolloff = 8` | Cursor never sits at the screen edge. |
-| `number = true` | Line numbers. |
-| `cursorline = false`, `showmode = false`, `laststatus = 1` | Less chrome, fewer bright bars. |
-| `mouse = "a"` | Scroll and click. |
-| `clipboard = "unnamedplus"` | Yank and paste go through the system clipboard. |
-| `ignorecase` + `smartcase` | Search ignores case unless you type a capital. |
-| `undofile` | Undo history survives closing the file. |
-| `mapleader = " "` | Space as leader for future maps. |
-| `q` in read-only buffers | `fe` and `v` open read-only. `q` quits like a pager. |
-| `path = "**"` | `:find name<tab>` searches the project tree. |
-| indent block | 4 spaces default. Tabs for go and asm. |
+- nvim uses the terminal's 16 colors and the classic `vim` scheme, so it follows Ghostty's light and dark. `pcall` keeps an older nvim from aborting the file at that line.
+- Lines wrap at words and keep their indent. The cursor stays 8 lines from the edge. Line numbers are on. The status line and the mode text are off.
+- The mouse is on. Yank and paste use the system clipboard. Search ignores case unless you type a capital. Undo survives reopening a file. Space is the leader key.
+- `q` quits a read-only buffer. `:find` searches the whole tree. Indent is 4 spaces, with tabs for go and asm.
 
-Built-in editing keys, no plugin:
+## Linux notes
 
-| Key | Does |
-|---|---|
-| `gcc` | toggle comment on the line. `gc` + motion for a range, e.g. `gcip` for a paragraph, `gc` in visual mode. |
-| `ctrl-n` / `ctrl-p` in insert | word completion from open buffers. |
-| `:find name<tab>` | fuzzy-ish file open by name |
-| `:Explore` | directory listing in the current window |
+- Ubuntu ships Ghostty from 26.04. On older releases the Ghostty project points to a community .deb: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)"`. `snap install ghostty --classic` also exists. Neither is maintained by the Ghostty project.
+- apt neovim is 0.9.5 on 24.04, which lacks `gcc`, and 0.6 on 22.04, which cannot load `init.lua`. `sudo snap install nvim --classic` installs a current one.
+- Run `install.sh` before the first `zsh` start. zsh then finds a `.zshrc` and skips its new-user wizard.
+- Linux has no Menlo. The `local` file sets DejaVu Sans Mono, the font Menlo derives from. Without it, Ghostty uses its built-in JetBrains Mono.
+- The theme follows the GNOME appearance setting. Tabs work, because Ghostty draws its own tab bar. `macos-*` settings are ignored.
+- nvim's clipboard needs `wl-copy` on Wayland or `xclip` on X11. Both are in the apt line.
+- If `pdfv` shows colored blocks instead of pages, timg is too old to detect Ghostty. Add `-p k` to its `timg` call.
+
+## Habits that matter more than any setting
+
+- Light appearance by day, dark at night. Ghostty follows it.
+- Night Shift on a sunset schedule.
+- Screen brightness matched to the room.
