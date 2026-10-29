@@ -1,7 +1,9 @@
 -- Use the terminal's 16-color palette instead of nvim's own truecolor scheme.
 -- Colors then follow Ghostty (Gruvbox Material, light or dark).
 vim.o.termguicolors = false
-vim.cmd.colorscheme("vim")
+-- pcall: nvim older than 0.10 has no "vim" scheme but already defaults to it,
+-- and a failed colorscheme would abort the rest of this file.
+pcall(vim.cmd, "colorscheme vim")
 
 -- reading comfort
 vim.o.wrap = true          -- long lines wrap

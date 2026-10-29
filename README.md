@@ -29,6 +29,31 @@ exec zsh                        # zsh files
 herdr server reload-config      # herdr
 ```
 
+## Linux
+
+The zsh and nvim files work unchanged on Ubuntu. The expected setup is Ghostty on the Mac and `ssh` into the box. If the box has a display, Ghostty for Linux reads the same config file. Change `font-family` to a font that exists there.
+
+```sh
+sudo apt install zsh ripgrep bat poppler-utils timg fzf zoxide neovim
+git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
+chsh -s "$(command -v zsh)"      # takes effect on the next login
+```
+
+Run `install.sh` before the first `zsh` start, so zsh finds a `.zshrc` and skips its new-user wizard.
+
+Ubuntu 26.04 and newer: the apt line is enough. Ubuntu 24.04: apt neovim is 0.9.5, which lacks `gcc` and warns that it has no clipboard provider. Ubuntu 22.04: apt neovim 0.6 cannot load `init.lua`. On both, `sudo snap install nvim --classic` gives a current neovim.
+
+| Piece | On Linux |
+|---|---|
+| `bat` | apt installs the binary as `batcat`. `prompt.zsh` aliases `bat` to it, so `cat` stays colored. |
+| `ls` | GNU ls ignores `CLICOLOR`. `prompt.zsh` aliases `ls --color=auto` on Linux. |
+| `fzf --zsh` | apt fzf on 24.04 and older has no `--zsh`. `fzf-herdr.zsh` falls back to the two files the package ships. |
+| `TERM` | Ghostty sends `TERM=xterm-ghostty`. A box without that terminfo entry breaks `clear`, `less` and `nvim`. `ssh-terminfo` in `ghostty.config` installs the entry into `~/.terminfo` on the box on the first `ssh`. `sudo` does not read `~/.terminfo`. For root tools, run `infocmp -x xterm-ghostty \| sudo tic -x -` once on the box. |
+| nvim yank | nvim 0.10 and newer copies through OSC 52 when `SSH_TTY` is set, so `y` lands on the Mac clipboard. nvim 0.9 keeps yanks on the box. |
+| `pdfv` | Kitty graphics pass through ssh. If pages render as colored blocks, the box's timg is too old to detect Ghostty. Add `-p k` to the `timg` call. |
+| herdr | Run `herdr --remote <ssh-host>` on the Mac. On first use it installs herdr into `~/.local/bin` on the box. The server runs on the box, the UI uses the Mac's theme. `--session <name>` picks a named session. |
+| Ghostty and herdr configs | `install.sh` links and copies them on Linux too. Harmless without Ghostty. herdr reads the scrollback setting from the box's copy. |
+
 ## Keys
 
 Cheat sheet. Everything here works with the config as it is.
@@ -114,6 +139,7 @@ Goal: low eye strain over long sessions.
 | `mouse-hide-while-typing` | `true` | Cursor off the text. |
 | `macos-titlebar-style` | `hidden` | No title bar, no traffic-light buttons. Window keeps its frame and rounded corners. Close with `cmd+w`. |
 | `scrollback-limit` | `100000000` | 100 MB of scrollback per split instead of 10 MB. Long logs stay scrollable. Inside herdr, herdr's scrollback applies instead. |
+| `shell-integration-features` | `ssh-terminfo` | On the first `ssh` to a host, copy the `xterm-ghostty` terminfo there. Features not listed keep their defaults. See the Linux section. |
 | `copy-on-select` | `clipboard` | Selecting with the mouse copies to the system clipboard, as in wezterm and herdr. `true` would prefer a selection clipboard, which macOS does not have. |
 
 Hiding the titlebar costs you tabs. The window leaves the macOS native tab group, and every switching action rides on that group, so `cmd+1`…`cmd+9`, `cmd+shift+[`/`]`, `ctrl+tab` and the Window menu items all stop working. `cmd+t` still opens a tab you can never return to — treat it as broken. Verified on Ghostty 1.3.1.
@@ -135,8 +161,9 @@ Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Chan
 
 | Line | Why |
 |---|---|
+| `source .../ghostty-integration` | Ghostty injects its shell integration only into the shell it spawns. `exec zsh` loses it. This line keeps cursor shape, prompt marks and the `ssh` terminfo wrapper after `exec zsh`. No-op outside Ghostty. |
 | `PROMPT='%F{yellow}%~%f %F{green}❯%f '` | Path and arrow only. No user@host. Yellow and green instead of blue. Blue text on dark bg is hardest to focus. |
-| `export CLICOLOR=1` | Colors in `ls`. |
+| `export CLICOLOR=1` | Colors in `ls` on macOS. On Linux an `ls --color=auto` alias does the same. |
 | `export LESS='-R -i -F -X'` | Pager keeps colors, ignores case, quits on short files, leaves output on screen. |
 | `export EDITOR=nvim` | Used by `fe` and git. nvim ships syntax colors for markdown. |
 | `bindkey -e` | Emacs keys. `EDITOR=nvim` otherwise flips zsh into vi mode and kills ctrl+a / ctrl+e. |
@@ -148,6 +175,7 @@ Alternate palettes with the same warmth: `Everforest Dark Hard`, `Zenburn`. Chan
 | `compinit` + `matcher-list` | Tab completes subcommands and flags for git, brew and more. Case-insensitive. |
 | `ctrl-x ctrl-e` | Open the current command line in nvim. Save and quit runs it. Quit with `:cq` to discard it. |
 | `v() { nvim -R "$@" }` | Read-only viewer with colors. `q` quits. |
+| `alias bat=batcat` | Only when `batcat` exists. Ubuntu's apt package uses that name. |
 | `alias cat='bat --style=plain'` | Colored cat. No line numbers or frame. Pipes still get raw text. Real cat: `command cat`. |
 | `export BAT_THEME=gruvbox-dark` | Match the terminal palette. |
 | `hide` / `show` | Toggle the path in this shell only. `hide` for recording, `show` to restore. Other tabs untouched. |
@@ -161,6 +189,7 @@ Plain `fzf` only prints the pick. tmux popups need `--tmux`. herdr has no floati
 
 | Piece | What it does |
 |---|---|
+| `source <(fzf --zsh)` or the two package files | fzf older than 0.48 (Ubuntu apt) has no `--zsh`. The fallback sources `/usr/share/doc/fzf/examples/key-bindings.zsh` and `completion.zsh`. |
 | `source <(fzf --zsh)` | fzf keys at the prompt: `ctrl-r` fuzzy history, `ctrl-t` paste a picked path, `alt-c` cd into a picked dir. `alt-c` = press `esc` then `c`, since `macos-option-as-alt` is not set. |
 | `FZF_DEFAULT_COMMAND` | `rg --files --hidden`: file lists respect `.gitignore`, so `node_modules` and `.venv` stay out. Dotfiles are in. |
 | `fe [fzf args]` | Pick a file. Inside herdr: open it in `$EDITOR` in a right split. The split closes when the editor exits. Outside herdr: open in the same pane. |
@@ -189,7 +218,7 @@ herdr commands used: `herdr pane split <id> --direction right --cwd "$PWD" --foc
 | Line | Why |
 |---|---|
 | `termguicolors = false` | nvim's default scheme paints its own truecolor white-on-black. Off, it uses the terminal's 16 ANSI colors, so it matches Ghostty and follows light/dark. |
-| `colorscheme("vim")` | Classic scheme, built for 16 colors. |
+| `pcall(vim.cmd, "colorscheme vim")` | Classic scheme, built for 16 colors. `pcall` because nvim older than 0.10 has no scheme by that name, already looks like it, and a failed `colorscheme` would abort the rest of the file. |
 | `wrap`, `linebreak`, `breakindent` | Long prose lines wrap at words and keep indent. |
 | `scrolloff = 8` | Cursor never sits at the screen edge. |
 | `number = true` | Line numbers. |

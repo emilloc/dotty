@@ -1,5 +1,11 @@
-# fzf shell keys: ctrl-r history, ctrl-t paste a path, alt-c cd into a dir
-source <(fzf --zsh)
+# fzf shell keys: ctrl-r history, ctrl-t paste a path, alt-c cd into a dir.
+# fzf older than 0.48 (Ubuntu apt) has no --zsh. Its package ships the same two files.
+if fzf --zsh >/dev/null 2>&1; then
+  source <(fzf --zsh)
+else
+  source /usr/share/doc/fzf/examples/key-bindings.zsh
+  source /usr/share/doc/fzf/examples/completion.zsh
+fi
 # file lists respect .gitignore (skips node_modules, .venv), include dotfiles
 export FZF_DEFAULT_COMMAND='rg --files --hidden -g "!.git"'
 

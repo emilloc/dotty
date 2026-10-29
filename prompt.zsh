@@ -1,8 +1,12 @@
 # minimal prompt + colors, no plugins
+# Ghostty only injects its shell integration into the shell it spawns. This keeps
+# it (cursor, prompt marks, ssh terminfo) after exec zsh. No-op outside Ghostty.
+[[ -n $GHOSTTY_RESOURCES_DIR ]] && source "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
 autoload -Uz colors && colors
 setopt PROMPT_SUBST
 PROMPT='%F{yellow}%~%f %F{green}❯%f '
 export CLICOLOR=1
+[[ $OSTYPE == linux* ]] && alias ls='ls --color=auto'   # GNU ls ignores CLICOLOR
 export LESS='-R -i -F -X'
 export EDITOR=nvim
 bindkey -e   # emacs keys; EDITOR=nvim otherwise flips zsh to vi mode
@@ -19,6 +23,7 @@ autoload -Uz edit-command-line && zle -N edit-command-line
 bindkey '^x^e' edit-command-line
 # view a file read-only with syntax colors: v FILE
 v() { nvim -R "$@" }
+(( $+commands[batcat] )) && alias bat=batcat   # Ubuntu's apt package installs bat as batcat
 alias cat='bat --style=plain'
 export BAT_THEME=gruvbox-dark
 # hide/show the path in this shell only (recording)
