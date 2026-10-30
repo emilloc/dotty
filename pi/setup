@@ -53,11 +53,40 @@ npm --prefix "$extension" ci \
     --no-audit \
     --no-fund
 
-"$pi_command" \
-    -e "$extension/index.ts" \
+# Start the real launcher so missing pinned packages are installed before use.
+check_dir=$(mktemp -d "${TMPDIR:-/tmp}/dotty-pi-check.XXXXXX")
+trap 'rm -rf "$check_dir"' EXIT HUP INT TERM
+cat > "$check_dir/check.mjs" <<'JS'
+import { writeFileSync } from "node:fs";
+
+export default function (pi) {
+    pi.on("session_start", () => {
+        const tools = new Set(pi.getAllTools().map((tool) => tool.name));
+        const commands = new Set(pi.getCommands().map((command) => command.name));
+        const missing = [
+            ...["search_web", "read_url_content", "find_text_in_url_content"].filter((name) => !tools.has(name)),
+            ...["perm", "state", "binja-bind"].filter((name) => !commands.has(name)),
+        ];
+        writeFileSync(new URL("./result.json", import.meta.url), JSON.stringify({ missing }));
+    });
+}
+JS
+"$root/pi-web" \
+    --mode rpc --no-session --no-context-files --no-skills --no-mcp \
+    --no-extensions --no-prompt-templates --no-themes \
     -e "$root/pi-binja-guard" \
-    --offline \
-    --list-models >/dev/null
+    -e "$check_dir/check.mjs" \
+    < /dev/null > /dev/null
+node - "$check_dir/result.json" <<'JS'
+const fs = require("node:fs");
+let check;
+try { check = JSON.parse(fs.readFileSync(process.argv[2], "utf8")); } catch {}
+if (!check || check.missing.length) {
+    console.error(`Pi extension check failed: ${check ? check.missing.join(", ") : "startup check did not run"}.`);
+    process.exit(1);
+}
+console.log("Verified web tools, permission modes, task checkpoints, and the Binary Ninja guard.");
+JS
 
 user_bin=$HOME/.local/bin
 launcher_link=$user_bin/pi-web

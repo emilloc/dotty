@@ -4,13 +4,25 @@ This directory contains the portable Pi setup for local models. It does not chan
 
 ## Set up one device
 
-Run this after cloning or pulling dotty:
+Install Pi with the [official installer](https://pi.dev) first:
+
+```sh
+curl -fsSL https://pi.dev/install.sh | sh
+```
+
+The installer can install Node.js when needed. It creates a managed Pi installation and can migrate an existing npm installation. Update a managed installation with `pi update`.
+
+Copy your private `models.json` and `settings.json` into `~/.pi/agent`. Keep them outside this public repository. On a device with existing Pi settings, back them up and merge the entries instead of replacing the files. Configure that device's SSH access and inference tunnel separately.
+
+After cloning or pulling dotty, run:
 
 ```sh
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs only the production dependencies pinned in `pi-web-search/package-lock.json`, verifies both local extensions, and links `pi-web` into `~/.local/bin`.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in `pi-web-search/package-lock.json` and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+
+On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH` or launch `~/.local/bin/pi-web` directly.
 
 ## Start Pi
 
