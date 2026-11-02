@@ -11,6 +11,7 @@ while [ -L "$launcher" ]; do
 done
 root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
 extension=$root/pi-web-search
+permission_extension=$root/pi-permission-modes
 
 managed_node=$HOME/.local/share/pi-node/current/bin
 if [ -x "$managed_node/node" ]; then
@@ -48,6 +49,12 @@ if ! node -e 'const match = process.argv[1].match(/^v?(\d+)\.(\d+)\.(\d+)/); pro
 fi
 
 npm --prefix "$extension" ci \
+    --omit=dev \
+    --ignore-scripts \
+    --no-audit \
+    --no-fund
+
+npm --prefix "$permission_extension" ci \
     --omit=dev \
     --ignore-scripts \
     --no-audit \

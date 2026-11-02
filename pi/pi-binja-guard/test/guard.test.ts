@@ -3,9 +3,17 @@ import test from "node:test";
 import {
 	activeBinaryView,
 	normalizeBinaryNinjaTool,
+	pathInsideDirectory,
 	selectBoundTarget,
 	validateBoundArguments,
 } from "../guard.ts";
+
+test("accepts only paths contained by the bound directory", () => {
+	assert.equal(pathInsideDirectory("/work/lane", "/work/lane/output/old.bin"), true);
+	assert.equal(pathInsideDirectory("/work/lane", "/work/lane"), false);
+	assert.equal(pathInsideDirectory("/work/lane", "/work/lane-other/new.bin"), false);
+	assert.equal(pathInsideDirectory("/work/lane", "/work/other/new.bin"), false);
+});
 
 const openItems = `---
 tool: "bn_open_item_list"

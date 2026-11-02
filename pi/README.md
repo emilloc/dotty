@@ -20,7 +20,7 @@ After cloning or pulling dotty, run:
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in `pi-web-search/package-lock.json` and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
 
 On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH` or launch `~/.local/bin/pi-web` directly.
 
@@ -34,9 +34,20 @@ Dotty already puts `~/.local/bin` on `PATH`.
 
 The launcher always loads:
 
-- `pi-permission-modes` 2.7.2
+- the pinned local `pi-permission-modes` 2.8.0-dotty.1 extension
 - `pi-task-checkpoint` 0.1.1
 - the pinned local `pi-web-search` extension
+
+`pi-task-checkpoint` is loaded but inactive at the start of each session. Activate it before a long
+task:
+
+```text
+/state --fresh
+```
+
+Use `/state <task-id>` instead when resuming an existing task. The extension stores operational
+continuation state under the project directory at `.pi/task-state/`. It does not replace the Pi
+session journal or research evidence files.
 
 Add the Binary Ninja binding guard when the task needs it:
 
@@ -45,13 +56,26 @@ pi-web \
     -e ~/dev/dotty/pi/pi-binja-guard
 ```
 
+Start container and image-builder work in the explicit Container mode:
+
+```sh
+pi-web --perm container
+```
+
+Default, Plan, and Build block Unix sockets. Container mode permits all Unix
+sockets on Linux because seccomp cannot filter them by path, and it permits the
+standard Docker socket paths on macOS. It also permits nested user namespaces
+for rootless Podman and Buildah. Docker and similar daemons can act outside the
+sandbox's filesystem and network limits, so use Container mode only for tasks
+that require them.
+
 ## Pi directories
 
 Pi's default user directory is `~/.pi/agent`, singular. It owns the managed Pi executable, settings, models, authentication, MCP configuration, sessions, installed packages, and user extensions. This baseline does not create `~/.pi/agents` or a second agent directory.
 
 The launcher prefers the managed `~/.pi/agent/bin/pi`. It uses a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
 
-The web source remains under `~/dev/dotty/pi`. Putting it under `~/.pi/agent/extensions` would make web tools load in every Pi session. Keeping it as an explicit local package preserves the intended split: `pi` has no web tools, while `pi-web` loads them for that session.
+The web and permission-mode sources remain under `~/dev/dotty/pi`. Putting them under `~/.pi/agent/extensions` would make them load in every Pi session. Keeping them as explicit local packages preserves the intended split: `pi` keeps its base configuration, while `pi-web` loads the research extensions for that session.
 
 ## Web tools
 
@@ -86,5 +110,10 @@ Global `~/.pi/agent/settings.json` and project `.pi/settings.json` can override 
 ## Source
 
 `pi-web-search` 3.0.0-dotty.1 is based on `arcanemachine/pi-web-search` commit `035f764f8bb6a68def7d1d46a285ed9e6f63a771`. The local source adds public-network enforcement, DNS pinning, redirect checks, secret-safe model guidance, reproducible dependency locking, target-compatible request timeouts, and the dotty research defaults. The pinned `package-lock.json` SHA-256 is `fdd2a171567c850d06343c2af22e0e48270e67cd52321078648d3960407198b8`.
+
+`pi-permission-modes` 2.8.0-dotty.1 is based on `wynainfo/pi-permission-modes`
+2.7.2 commit `652902a`. The local source exposes the runtime's Unix-socket
+controls, adds the explicit Container mode, and tells the model when daemon
+access is blocked or can escape the remaining sandbox boundaries.
 
 The Binary Ninja guard binds MCP calls to one operator-selected local file. Run `/binja-bind <path>` before asking the model to use Binary Ninja.

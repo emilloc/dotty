@@ -11,9 +11,14 @@ while [ -L "$launcher" ]; do
 done
 root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
 extension=$root/pi-web-search
+permission_extension=$root/pi-permission-modes
 
 if [ ! -d "$extension/node_modules/ipaddr.js" ]; then
     printf 'Pi web dependencies are missing. Run: %s/setup\n' "$root" >&2
+    exit 1
+fi
+if [ ! -d "$permission_extension/node_modules/@anthropic-ai/sandbox-runtime" ]; then
+    printf 'Pi permission-mode dependencies are missing. Run: %s/setup\n' "$root" >&2
     exit 1
 fi
 
@@ -29,7 +34,7 @@ else
 fi
 
 exec "$pi_command" \
-    -e npm:pi-permission-modes@2.7.2 \
+    -e "$permission_extension" \
     -e npm:pi-task-checkpoint@0.1.1 \
     -e "$extension/index.ts" \
     "$@"

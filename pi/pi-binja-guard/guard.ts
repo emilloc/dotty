@@ -1,3 +1,5 @@
+import { isAbsolute, relative, sep } from "node:path";
+
 export const BINARY_NINJA_PREFIX = "mcp__binaryninja__";
 
 const CONTROL_TOOLS = new Set([
@@ -16,6 +18,11 @@ export interface BoundTarget {
 	openItem: string;
 	binaryView: string;
 	viewType: string;
+}
+
+export function pathInsideDirectory(root: string, target: string): boolean {
+	const path = relative(root, target);
+	return path !== "" && path !== ".." && !path.startsWith(`..${sep}`) && !isAbsolute(path);
 }
 
 function splitTableRow(line: string): string[] {
