@@ -700,6 +700,29 @@ test("bash: session grant covers the same command, not a longer chain", { skip }
   }
 });
 
+test("container execution declares an operator block outside Container mode", { skip }, async () => {
+  const h = await setup();
+  try {
+    const blocked = await h.call("bash", { command: "timeout 60 podman run --rm image" });
+    assert.equal(blocked?.block, true);
+    assert.equal(
+      blocked?.reason,
+      "OPERATOR_BLOCKED\nContainer execution is unavailable in Default mode.\nRequired action: switch to Container mode with Alt+M.",
+    );
+    assert.equal(h.ctx.notices.at(-1), blocked?.reason);
+    assert.equal(h.ctx.prompts.length, 0);
+
+    h.ctx.answers.push("Allow once");
+    assert.equal(await h.call("bash", { command: "podman images" }), undefined, "inspection stays available");
+
+    await h.perm("container");
+    h.ctx.answers.push("Allow once");
+    assert.equal(await h.call("bash", { command: "podman run --rm image" }), undefined);
+  } finally {
+    h.cleanup();
+  }
+});
+
 test("plan mode: Markdown-only writes, plan prompt injected, show_plan stays visible", { skip }, async () => {
   const h = await setup();
   try {

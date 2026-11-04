@@ -13,6 +13,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   namespaces. macOS permits the standard Docker socket paths. The schema,
   project-tightening rules, `/sandbox` status, and model awareness text expose
   the platform limits and warn that daemon access can act outside the sandbox.
+- **Container-operation preflight.** Sandboxed modes without container
+  capabilities now block execution commands before they enter a predictable
+  sandbox failure and report `OPERATOR_BLOCKED` with the required mode switch.
+  Read-only inspection commands remain available.
 
 ## [2.7.2]
 

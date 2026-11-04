@@ -233,6 +233,24 @@ export function unwrapCommand(c: { name: string; args: string[] }): { name: stri
   return { name: head, args: rest };
 }
 
+export type ContainerRuntime = "podman" | "docker" | "buildah";
+
+/** Container clients that need execution capabilities, excluding harmless inspection. */
+export function containerExecutionRuntime(commands: BashCommand[]): ContainerRuntime | undefined {
+  const inspections = new Set(["--help", "help", "--version", "version", "images", "info", "ps", "inspect"]);
+  const groupedInspections = new Set(["inspect", "ls", "list", "exists", "history"]);
+  for (const command of commands) {
+    const inner = unwrapCommand(command);
+    const runtime = path.basename(normalizeBashToken(inner.name)).toLowerCase();
+    if (runtime !== "podman" && runtime !== "docker" && runtime !== "buildah") continue;
+    const args = inner.args.map((arg) => normalizeBashToken(arg).toLowerCase());
+    if (args.length === 0 || inspections.has(args[0])) continue;
+    if (["image", "container", "network", "volume"].includes(args[0]) && groupedInspections.has(args[1] ?? "")) continue;
+    return runtime;
+  }
+  return undefined;
+}
+
 /**
  * True when the command escalates privileges - directly (`sudo …`) or through
  * known wrapper commands (`env PATH=/x sudo …`, `nice -n 10 doas …`, `find .

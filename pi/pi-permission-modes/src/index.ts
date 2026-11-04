@@ -64,7 +64,7 @@ import { localBindingNote, sandboxAwarenessPrompt } from "./awareness.ts";
 import { PROFILE_GRANT_QUESTION, profileExclusions, profileGrantText } from "./sandbox-win.ts";
 import { type PromptParts, writePromptSections } from "./prompt-sections.ts";
 import { bashExecPlan, bashGate, titleWithCommand } from "./bash-enforce.ts";
-import { analyzeBash, escapeTargetFromReason, escapingPaths } from "./bash-parse.ts";
+import { analyzeBash, containerExecutionRuntime, escapeTargetFromReason, escapingPaths } from "./bash-parse.ts";
 import {
   auditStaleDefaults,
   defaultsChangedSince,
@@ -1559,6 +1559,25 @@ export default async function (pi: ExtensionAPI) {
       // see decideBashCommand), most-restrictive across the chain; detect
       // escapes/privilege.
       const analysis = await analyzeBash(command, root, bashBounds);
+      const containerRuntime = containerExecutionRuntime(analysis.commands);
+      const containerCapable =
+        containerRuntime === undefined ||
+        (process.platform === "linux"
+          ? containerRuntime === "docker"
+            ? m.sandbox.linux?.allowAllUnixSockets === true
+            : m.sandbox.linux?.allowNestedUserNamespaces === true
+          : process.platform === "darwin"
+            ? m.sandbox.macos?.allowAllUnixSockets === true || Boolean(m.sandbox.macos?.allowUnixSockets?.length)
+            : true);
+      if (!containerCapable) {
+        const reason = [
+          "OPERATOR_BLOCKED",
+          `Container execution is unavailable in ${m.label} mode.`,
+          "Required action: switch to Container mode with Alt+M.",
+        ].join("\n");
+        if (ctx.hasUI) ctx.ui.notify(reason, "warning");
+        return { block: true, reason };
+      }
       // A command no layer matches falls back to "ask" (see decideBashChain).
       const decision =
         analysis.commands.length > 0 ? decideBashChainDetailed(m, analysis.commands) : decideDetailed(m, "bash", command);

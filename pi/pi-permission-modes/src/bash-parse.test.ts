@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   analyzeBash,
   type BashCommand,
+  containerExecutionRuntime,
   escapeTargetFromReason,
   escapingPaths,
   expandShellCommands,
@@ -150,6 +151,24 @@ test("isPrivilegeEscalation: no false positives on mere mentions", () => {
   assert.ok(!isPrivilegeEscalation(bc("echo", "use sudo for that")));
   assert.ok(!isPrivilegeEscalation(bc("env", "ls", "-la"))); // wrapped command is benign
   assert.ok(!isPrivilegeEscalation(bc("env"))); // wrapper with nothing wrapped
+});
+
+test("containerExecutionRuntime: blocks execution but preserves inspection", () => {
+  assert.equal(containerExecutionRuntime([bc("podman", "run", "image")]), "podman");
+  assert.equal(containerExecutionRuntime([bc("timeout", "60", "podman", "build", ".")]), "podman");
+  assert.equal(containerExecutionRuntime([bc("podman", "--runroot", "/tmp/run", "run", "image")]), "podman");
+  assert.equal(containerExecutionRuntime([bc("docker", "compose", "up")]), "docker");
+  assert.equal(containerExecutionRuntime([bc("buildah", "bud", ".")]), "buildah");
+  for (const command of [
+    bc("podman", "--version"),
+    bc("podman", "images"),
+    bc("podman", "image", "inspect", "image"),
+    bc("docker", "ps"),
+    bc("buildah", "info"),
+    bc("echo", "podman", "run"),
+  ]) {
+    assert.equal(containerExecutionRuntime([command]), undefined);
+  }
 });
 
 test("expandShellCommands: bash -c scripts are re-parsed, recursively and depth-limited", () => {
