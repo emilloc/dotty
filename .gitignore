@@ -3,3 +3,4 @@ tmp/
 # Private research instructions are deployed directly to each device.
 /pi/prompts/
 /pi/skills/
+/pi/private/
