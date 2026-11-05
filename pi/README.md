@@ -32,6 +32,9 @@ pi-web
 
 Dotty already puts `~/.local/bin` on `PATH`.
 
+The launcher queries the local Spark tunnel and selects its model when exactly one model is
+served. Pass `--model spark/<id>` or `--provider <id>` to bypass that discovery.
+
 The launcher always loads:
 
 - the pinned local `pi-permission-modes` 2.8.0-dotty.1 extension

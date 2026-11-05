@@ -78,7 +78,7 @@ export default function (pi) {
     });
 }
 JS
-"$root/pi-web" \
+PI_SKIP_SPARK_MODEL_DISCOVERY=1 "$root/pi-web" \
     --mode rpc --no-session --no-context-files --no-skills --no-mcp \
     --no-extensions --no-prompt-templates --no-themes \
     -e "$root/pi-binja-guard" \
