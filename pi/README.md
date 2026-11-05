@@ -32,8 +32,8 @@ pi-web
 
 Dotty already puts `~/.local/bin` on `PATH`.
 
-The launcher queries the local Spark tunnel and selects its model when exactly one model is
-served. Pass `--model spark/<id>` or `--provider <id>` to bypass that discovery.
+The launcher queries the Spark provider URL in `~/.pi/agent/models.json` and selects its model when
+exactly one model is served. Pass `--model spark/<id>` or `--provider <id>` to bypass that discovery.
 
 The launcher always loads:
 

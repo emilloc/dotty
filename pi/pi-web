@@ -50,9 +50,22 @@ if [ "$auto_model" -eq 1 ] && [ "${PI_SKIP_SPARK_MODEL_DISCOVERY:-0}" != 1 ]; th
         exit 1
     fi
 
+    if ! spark_base_url=$("$node_command" -e '
+        const fs = require("node:fs");
+        try {
+            const config = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            const url = new URL(config.providers?.spark?.baseUrl);
+            if (url.protocol !== "http:" && url.protocol !== "https:") process.exit(1);
+            process.stdout.write(url.toString().replace(/\/+$/, ""));
+        } catch { process.exit(1); }
+    ' "$HOME/.pi/agent/models.json"); then
+        printf 'Could not read providers.spark.baseUrl from ~/.pi/agent/models.json.\n' >&2
+        exit 1
+    fi
+
     # shortcut: assumes the Spark serves exactly one model; pass --model to override.
-    if ! spark_models=$(curl -fsS --max-time 3 http://127.0.0.1:18888/v1/models); then
-        printf 'Could not reach the Spark model endpoint through the SSH tunnel.\n' >&2
+    if ! spark_models=$(curl -fsS --max-time 3 "$spark_base_url/models"); then
+        printf 'Could not reach the configured Spark model endpoint.\n' >&2
         exit 1
     fi
     if ! spark_model=$(printf '%s' "$spark_models" |
