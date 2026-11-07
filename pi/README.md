@@ -20,7 +20,7 @@ After cloning or pulling dotty, run:
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` and `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
 
 On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH` or launch `~/.local/bin/pi-web` directly.
 
@@ -71,6 +71,54 @@ standard Docker socket paths on macOS. It also permits nested user namespaces
 for rootless Podman and Buildah. Docker and similar daemons can act outside the
 sandbox's filesystem and network limits, so use Container mode only for tasks
 that require them.
+
+## On-command briefings
+
+Run `pi-brief` after a milestone is complete or the accompanying notes have a substantial
+update. It accepts task state and a text record from any domain, and opens a separate
+interactive Pi session for orientation and follow-up questions. `RESEARCH.md` below
+is an example filename; the second argument can be any text notes file.
+
+```sh
+~/dev/dotty/pi/pi-brief /path/to/.pi/task-state/task-id.json /path/to/RESEARCH.md
+```
+
+The next `pi/setup` run also links `pi-brief` into `~/.local/bin`. Node.js must be on
+`PATH`. The launcher uses your global Pi default model and existing provider
+credentials. It calls base Pi with tools, extensions, MCP, skills, prompt templates,
+and project context files disabled. The prompt lives in `briefing-prompt.md`.
+Pi starts in the temporary input directory so unrelated project settings and working
+directory names do not supply context for the briefing.
+The initial response explains the purpose, decisive evidence, its implications, and
+the recorded next step. It usually targets 150–300 words. Ask follow-up questions to
+explore unfamiliar concepts or supporting detail.
+
+Both records are captured before Pi starts. Their original paths, SHA-256 hashes,
+task revision, and capture time accompany the input. The launcher rejects malformed
+task state, empty research records, and changes detected during capture. These checks
+cannot prove both files describe the same milestone. Invoke it after both writers
+have finished. There is no file watcher or checkpoint-triggered generation.
+
+Pi stores the conversation, including the captured input, under
+`~/.pi/agent/sessions/briefings/` (or the corresponding `PI_CODING_AGENT_DIR`). Temporary
+input copies are removed when Pi exits normally. The launcher leaves the research
+files unchanged. The briefing stays in the conversation in this prototype. It does
+not write `BRIEFING.md`. Start a new briefing when you need a fresh snapshot.
+
+To revisit a saved briefing with the same restrictions:
+
+```sh
+pi --session-dir ~/.pi/agent/sessions/briefings --resume \
+    --offline --no-tools --no-extensions --no-mcp --no-skills \
+    --no-context-files --no-prompt-templates \
+    --system-prompt "$(cat ~/dev/dotty/pi/briefing-prompt.md)"
+```
+
+Run the launcher checks without contacting a model:
+
+```sh
+node --test ~/dev/dotty/pi/tests/pi-brief.test.cjs
+```
 
 ## Pi directories
 
