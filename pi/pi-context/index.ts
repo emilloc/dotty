@@ -1,7 +1,9 @@
 // Keeps a local model's context small: bounded tool output, and a `delegate` tool that
-// moves large reading jobs into a child Pi process with its own context.
+// moves large reading jobs into a child Pi process with its own context. It also starts
+// each session on the model the local inference server has loaded.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
@@ -44,8 +46,29 @@ export default function (pi: ExtensionAPI) {
 		return { content: [{ type: "text" as const, text: capText(text, BASH_CHARS, savedTo) }] };
 	});
 
-	// A child must not delegate again.
+	// A child must not delegate again, and it already runs on its parent's model.
 	if (process.env.PI_DELEGATE_CHILD) return;
+
+	// A local server serves one model at a time. When the session's model is not the loaded
+	// one, switch to it. Only providers from models.json are asked, and an explicit --model
+	// or --provider is left alone.
+	pi.on("session_start", async (_event, ctx) => {
+		const model = ctx.model;
+		if (!model || process.argv.some((arg) => /^(-m|--model|--provider)(=|$)/.test(arg))) return;
+		try {
+			const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
+			const provider = JSON.parse(readFileSync(join(agentDir, "models.json"), "utf8")).providers?.[model.provider];
+			if (!provider?.baseUrl) return;
+			const response = await fetch(`${provider.baseUrl.replace(/\/+$/, "")}/models`, { signal: AbortSignal.timeout(3000) });
+			const served = (await response.json()).data;
+			if (!Array.isArray(served) || served.length !== 1 || served[0].id === model.id) return;
+			const loaded = ctx.modelRegistry.find(model.provider, served[0].id);
+			if (loaded && (await pi.setModel(loaded)) && ctx.hasUI) ctx.ui.notify(`Model: ${model.provider}/${loaded.id} is the one loaded on the server`, "info");
+			else if (!loaded && ctx.hasUI) ctx.ui.notify(`The server has ${served[0].id} loaded, which is not in models.json`, "warning");
+		} catch {
+			if (ctx.hasUI) ctx.ui.notify(`Could not reach the ${model.provider} server to check the loaded model`, "warning");
+		}
+	});
 
 	pi.registerTool({
 		name: "delegate",

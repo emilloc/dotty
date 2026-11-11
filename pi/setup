@@ -117,7 +117,7 @@ JS
 
 user_bin=$HOME/.local/bin
 mkdir -p "$user_bin"
-for launcher_name in pi-web pi-brief; do
+for launcher_name in pi-brief; do
     launcher_link=$user_bin/$launcher_name
     if [ -L "$launcher_link" ]; then
         if [ "$(readlink "$launcher_link")" != "$root/$launcher_name" ]; then
@@ -132,4 +132,4 @@ for launcher_name in pi-web pi-brief; do
     fi
 done
 
-printf 'Pi is ready. Run: pi, pi-web (Spark model discovery), or pi-brief TASK_STATE.json RESEARCH.md\n'
+printf 'Pi is ready. Run: pi, or pi-brief TASK_STATE.json RESEARCH.md\n'

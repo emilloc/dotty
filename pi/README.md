@@ -20,11 +20,11 @@ After cloning or pulling dotty, run:
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles. Its first run needs internet access. It links the extensions into `~/.pi/agent/extensions`, then starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard without sending a model request. It then links `pi-web` and `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles. Its first run needs internet access. It links the extensions into `~/.pi/agent/extensions`, then starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard without sending a model request. It then links `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
 
 Setup patches the pinned sandbox runtime to allow the macOS `kern.iossupportversion` read used during command startup. This prevents repeated sandbox denials without changing filesystem or network restrictions. The same patch runs on a normal permission-mode `npm install`.
 
-On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH` or launch `~/.local/bin/pi-web` directly.
+On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH`.
 
 ## Start Pi
 
@@ -40,13 +40,14 @@ Setup links four extensions into `~/.pi/agent/extensions`, which Pi loads in eac
 | `pi-permission-modes` 2.8.0-dotty.2 | Shell sandbox, permission modes and the network allowlist |
 | `pi-web-search` | `search_web`, `read_url_content`, `find_text_in_url_content` |
 | `pi-task-checkpoint` 0.1.1-dotty.1 | Durable task state under `.pi/task-state/` |
-| `pi-context` | Bounded tool output and the `delegate` tool |
+| `pi-context` | Bounded tool output, the `delegate` tool, and loaded-model selection |
 
 `pi --no-extensions` starts a session without them. `pi-brief` already does this.
 
-`pi-web` is `pi` with one addition. It asks the Spark server which model is loaded and starts Pi on
-that model, so you do not have to pass `--model` after swapping models on the server. Plain `pi`
-starts on the `defaultModel` in `settings.json`.
+Each session starts on the model your inference server has loaded. Pi asks the server of the default
+provider in `models.json`, and switches when exactly one model is served and it differs from
+`defaultModel`. Pass `--model` or `--provider` to choose yourself. The earlier `pi-web` launcher is
+gone, because plain `pi` now does everything it did.
 
 ### Modes
 
