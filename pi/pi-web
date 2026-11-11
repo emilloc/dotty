@@ -9,10 +9,9 @@ while [ -L "$launcher" ]; do
         *) launcher=${launcher%/*}/$link ;;
     esac
 done
-root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
 
 # Extensions load from ~/.pi/agent/extensions (linked by setup), so plain `pi` has them too.
-# This launcher only adds Spark model discovery and the research prompt.
+# This launcher only adds Spark model discovery.
 
 if [ -x "$HOME/.pi/agent/bin/pi" ]; then
     pi_command=$HOME/.pi/agent/bin/pi
@@ -78,6 +77,4 @@ if [ "$auto_model" -eq 1 ] && [ "${PI_SKIP_SPARK_MODEL_DISCOVERY:-0}" != 1 ]; th
     set -- --model "spark/$spark_model" "$@"
 fi
 
-exec "$pi_command" \
-    --append-system-prompt "$root/research-support.md" \
-    "$@"
+exec "$pi_command" "$@"

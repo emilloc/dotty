@@ -44,9 +44,9 @@ Setup links four extensions into `~/.pi/agent/extensions`, which Pi loads in eac
 
 `pi --no-extensions` starts a session without them. `pi-brief` already does this.
 
-`pi-web` is `pi` plus two things. It selects the model the Spark provider is serving when exactly
-one is loaded, and it appends `research-support.md` to the system prompt. Pass `--model spark/<id>`
-or `--provider <id>` to skip the discovery.
+`pi-web` is `pi` with one addition. It asks the Spark server which model is loaded and starts Pi on
+that model, so you do not have to pass `--model` after swapping models on the server. Plain `pi`
+starts on the `defaultModel` in `settings.json`.
 
 ### Modes
 
