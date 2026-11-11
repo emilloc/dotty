@@ -203,6 +203,7 @@ export const FALLBACK_CONFIG: PermissionModeConfig = {
       sandbox: {
         enabled: true,
         writable: true,
+        allowLocalBinding: false,
         allowWrite: ["."],
         denyWrite: [],
         denyRead: ["~/.ssh", "~/.aws", "~/.gnupg"],

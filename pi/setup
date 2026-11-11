@@ -60,6 +60,8 @@ npm --prefix "$permission_extension" ci \
     --no-audit \
     --no-fund
 
+node "$permission_extension/patch-runtime.mjs"
+
 # Start the real launcher so missing pinned packages are installed before use.
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/dotty-pi-check.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT HUP INT TERM

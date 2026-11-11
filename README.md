@@ -145,6 +145,7 @@ The goal is low eye strain over long sessions.
 - Scrollback is 100 MB per split instead of the default 10 MB. Inside herdr, herdr's own limit applies.
 - `copy-on-select = clipboard` puts a mouse selection in the system clipboard.
 - `shell-integration-features = ssh-terminfo` copies Ghostty's terminfo to a host on the first `ssh`, so `clear`, `less` and `nvim` work there.
+- Left Option sends Alt shortcuts on macOS, including Pi's `alt+m` and `alt+n`. Right Option retains special-character input. Linux Alt behavior is unchanged.
 - `config-file = ?local` loads `~/.config/ghostty/local` when it exists. The file is untracked and holds per-machine values, such as the font on Linux.
 
 ## prompt.zsh

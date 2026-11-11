@@ -8,22 +8,23 @@
       "color": "muted",
       "sandbox": {
         "enabled": true,
+        "allowLocalBinding": false,
         "writable": true,
         "allowWrite": [".", "/tmp/pi"],
         "denyWrite": [],
-        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json"],
+        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json", "~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"],
         "network": {
           "allowedDomains": [
-            "npmjs.org",
-            "*.npmjs.org",
             "registry.npmjs.org",
             "registry.yarnpkg.com",
             "pypi.org",
-            "*.pypi.org",
+            "files.pythonhosted.org",
             "github.com",
-            "*.github.com",
             "api.github.com",
-            "raw.githubusercontent.com"
+            "raw.githubusercontent.com",
+            "codeload.github.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com"
           ],
           "deniedDomains": []
         }
@@ -49,22 +50,23 @@
       "systemPrompt": "@plan",
       "sandbox": {
         "enabled": true,
+        "allowLocalBinding": false,
         "writable": false,
         "allowWrite": [".", "/tmp/pi"],
         "denyWrite": [],
-        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json"],
+        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json", "~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"],
         "network": {
           "allowedDomains": [
-            "npmjs.org",
-            "*.npmjs.org",
             "registry.npmjs.org",
             "registry.yarnpkg.com",
             "pypi.org",
-            "*.pypi.org",
+            "files.pythonhosted.org",
             "github.com",
-            "*.github.com",
             "api.github.com",
-            "raw.githubusercontent.com"
+            "raw.githubusercontent.com",
+            "codeload.github.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com"
           ],
           "deniedDomains": []
         }
@@ -92,19 +94,19 @@
         "writable": true,
         "allowWrite": [".", "/tmp/pi"],
         "denyWrite": [],
-        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json"],
+        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json", "~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"],
         "network": {
           "allowedDomains": [
-            "npmjs.org",
-            "*.npmjs.org",
             "registry.npmjs.org",
             "registry.yarnpkg.com",
             "pypi.org",
-            "*.pypi.org",
+            "files.pythonhosted.org",
             "github.com",
-            "*.github.com",
             "api.github.com",
-            "raw.githubusercontent.com"
+            "raw.githubusercontent.com",
+            "codeload.github.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com"
           ],
           "deniedDomains": []
         }
@@ -132,19 +134,19 @@
         "writable": true,
         "allowWrite": [".", "/tmp/pi"],
         "denyWrite": [],
-        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json"],
+        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json", "~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"],
         "network": {
           "allowedDomains": [
-            "npmjs.org",
-            "*.npmjs.org",
             "registry.npmjs.org",
             "registry.yarnpkg.com",
             "pypi.org",
-            "*.pypi.org",
+            "files.pythonhosted.org",
             "github.com",
-            "*.github.com",
             "api.github.com",
-            "raw.githubusercontent.com"
+            "raw.githubusercontent.com",
+            "codeload.github.com",
+            "objects.githubusercontent.com",
+            "release-assets.githubusercontent.com"
           ],
           "deniedDomains": []
         },

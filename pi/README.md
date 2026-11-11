@@ -22,6 +22,8 @@ After cloning or pulling dotty, run:
 
 The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` and `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
 
+Setup patches the pinned sandbox runtime to allow the macOS `kern.iossupportversion` read used during command startup. This prevents repeated sandbox denials without changing filesystem or network restrictions. The same patch runs on a normal permission-mode `npm install`.
+
 On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH` or launch `~/.local/bin/pi-web` directly.
 
 ## Start Pi
@@ -37,9 +39,15 @@ exactly one model is served. Pass `--model spark/<id>` or `--provider <id>` to b
 
 The launcher always loads:
 
-- the pinned local `pi-permission-modes` 2.8.0-dotty.1 extension
+- the pinned local `pi-permission-modes` 2.8.0-dotty.2 extension
 - `pi-task-checkpoint` 0.1.1
 - the pinned local `pi-web-search` extension
+
+The launcher also appends `research-support.md` through Pi's supported
+`--append-system-prompt` option. It supplies bounded local-search and evidence-format guidance.
+It adds no tool, permission mode, network grant or automatic timeout. Project research workflows
+remain in their existing skills. A new `pi-web` launch reads changes directly from this directory.
+Base `pi` and `pi-brief` are unchanged, and user-supplied append prompts remain supported.
 
 `pi-task-checkpoint` is loaded but inactive at the start of each session. Activate it before a long
 task:
@@ -128,6 +136,29 @@ The launcher prefers the managed `~/.pi/agent/bin/pi`. It uses a `pi` found on `
 
 The web and permission-mode sources remain under `~/dev/dotty/pi`. Putting them under `~/.pi/agent/extensions` would make them load in every Pi session. Keeping them as explicit local packages preserves the intended split: `pi` keeps its base configuration, while `pi-web` loads the research extensions for that session.
 
+## Sandbox defaults
+
+Default and Plan disable local binding. On macOS this also blocks direct shell
+connections to host loopback services. Build retains local binding for development
+servers. The Pi process's model connection is outside the shell sandbox and is
+unchanged. Linux keeps its separate sandbox network namespace.
+
+Sandboxed modes deny reads of common credential stores and `.env` / `.env.*`
+files, including example files. Reads elsewhere remain denylist-based. Inherited
+credential environment variables and host-side extensions are not isolated by
+these file rules. Keep secrets out of the launcher environment.
+
+Shell network defaults allow exact GitHub source/download and package-registry
+hosts, without domain wildcards. Allow additional hosts per task with the network
+prompt or `/net allow <domain>`. Prefer session grants over "Allow forever" and
+keep `/net open` exceptional. Web tools use their own public-address checks.
+Use Container mode only when the task requires daemon access.
+
+In Ghostty, Left Option+M cycles modes on macOS and Alt+M does so on Linux.
+Left Option+N / Alt+N toggles shell network filtering. Reload Ghostty's config
+with Cmd+Shift+, on macOS after pulling these settings. Other terminals must
+send Option as Alt, or use `/perm` and `/net` commands.
+
 ## Web tools
 
 The extension gives the local model these tools:
@@ -162,7 +193,7 @@ Global `~/.pi/agent/settings.json` and project `.pi/settings.json` can override 
 
 `pi-web-search` 3.0.0-dotty.1 is based on `arcanemachine/pi-web-search` commit `035f764f8bb6a68def7d1d46a285ed9e6f63a771`. The local source adds public-network enforcement, DNS pinning, redirect checks, secret-safe model guidance, reproducible dependency locking, target-compatible request timeouts, and the dotty research defaults. The pinned `package-lock.json` SHA-256 is `fdd2a171567c850d06343c2af22e0e48270e67cd52321078648d3960407198b8`.
 
-`pi-permission-modes` 2.8.0-dotty.1 is based on `wynainfo/pi-permission-modes`
+`pi-permission-modes` 2.8.0-dotty.2 is based on `wynainfo/pi-permission-modes`
 2.7.2 commit `652902a`. The local source exposes the runtime's Unix-socket
 controls, adds the explicit Container mode, and tells the model when daemon
 access is blocked or can escape the remaining sandbox boundaries.

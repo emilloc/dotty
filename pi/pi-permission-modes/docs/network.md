@@ -148,4 +148,4 @@ above rather than to ask for the token itself.
 Any command inside the sandbox can read a token in its environment, so scope
 the token, not the secrecy. Other credential files are masked by `denyRead`
 ([sandbox.md, Keys](sandbox.md#keys)); the stored login of a CLI such as the
-GitHub CLI is not, unless you add its path.
+GitHub CLI is blocked by the stock `~/.config/gh/hosts.yml` read denial.

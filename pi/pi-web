@@ -87,6 +87,7 @@ if [ "$auto_model" -eq 1 ] && [ "${PI_SKIP_SPARK_MODEL_DISCOVERY:-0}" != 1 ]; th
 fi
 
 exec "$pi_command" \
+    --append-system-prompt "$root/research-support.md" \
     -e "$permission_extension" \
     -e npm:pi-task-checkpoint@0.1.1 \
     -e "$extension/index.ts" \

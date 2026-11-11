@@ -61,6 +61,31 @@ test("loadStockDefaults: reads the shipped JSON → five modes, correct defaults
   assert.ok(stockDefaultsFile().endsWith("permission-mode.defaults.json"));
 });
 
+test("stock sandbox defaults protect research modes on macOS and Linux", () => {
+  const stock = loadStockDefaults();
+  for (const platform of ["darwin", "linux"] as const) {
+    for (const name of ["default", "plan", "build", "container"]) {
+      const profile = stock.modes[name].sandbox;
+      const cfg = profileToConfig(profile, platform);
+      assert.equal(profile.enabled, true);
+      assert.equal(cfg.network.allowLocalBinding, name === "build" || name === "container" ? true : undefined);
+      for (const secret of ["~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"]) {
+        assert.ok(cfg.filesystem.denyRead.includes(secret), `${platform}/${name}: ${secret}`);
+      }
+      assert.ok(cfg.network.allowedDomains?.every((host) => !host.includes("*")));
+      for (const host of ["registry.npmjs.org", "pypi.org", "files.pythonhosted.org", "github.com", "api.github.com", "raw.githubusercontent.com", "codeload.github.com", "release-assets.githubusercontent.com"]) {
+        assert.ok(cfg.network.allowedDomains?.includes(host), `${platform}/${name}: ${host}`);
+      }
+      if (name !== "container") {
+        assert.equal(cfg.network.allowAllUnixSockets, undefined);
+        assert.equal(cfg.network.allowUnixSockets, undefined);
+        assert.equal(cfg.allowNestedUserNamespaces, undefined);
+      }
+    }
+  }
+  assert.equal(FALLBACK_CONFIG.modes.default.sandbox.allowLocalBinding, false);
+});
+
 test("FALLBACK_CONFIG is a valid, safe single-mode config", () => {
   assert.equal(FALLBACK_CONFIG.defaultMode, "default");
   assert.deepEqual(Object.keys(FALLBACK_CONFIG.modes), ["default"]);
@@ -477,7 +502,8 @@ test("sandbox.allowLocalBinding: on unless set; a project may turn it off, never
     global: {
       modes: {
         build: { sandbox: { allowLocalBinding: false } },
-        plan: { sandbox: { allowLocalBinding: "yes" } },
+        plan: { sandbox: { allowLocalBinding: true } },
+        container: { sandbox: { allowLocalBinding: "yes" } },
         default: { sandbox: { allowLocalBinding: false, macos: { allowLocalBinding: true } } }, // both spellings: the top-level one wins
         yolo: { sandbox: { macos: { allowLocalBinding: false } } }, // the 2.5.0 spelling alone: read as the top-level key
       },
@@ -495,8 +521,8 @@ test("sandbox.allowLocalBinding: on unless set; a project may turn it off, never
   assert.ok(s.errors.some((e) => /cannot enable sandbox\.allowLocalBinding/.test(e)));
   assert.equal(c.modes.default.sandbox.allowLocalBinding, false);
   assert.equal(profileToConfig(c.modes.default.sandbox).network.allowLocalBinding, undefined, "off: the runtime key stays absent");
-  assert.equal(c.modes.plan.sandbox.allowLocalBinding, undefined);
-  assert.equal(profileToConfig(c.modes.plan.sandbox).network.allowLocalBinding, true, "unset means on");
+  assert.equal(c.modes.plan.sandbox.allowLocalBinding, true);
+  assert.equal(profileToConfig(c.modes.plan.sandbox).network.allowLocalBinding, true, "global opt-in remains on");
   assert.ok(s.errors.some((e) => /sandbox\.allowLocalBinding.*wrong type/.test(e)), "wrong-typed global value dropped with a warning");
   assert.equal(c.modes.yolo.sandbox.allowLocalBinding, false, "the 2.5.0 spelling is read");
   assert.deepEqual(c.modes.yolo.sandbox.macos, {}, "and not kept under macos");

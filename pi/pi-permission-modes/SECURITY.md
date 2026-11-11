@@ -38,7 +38,8 @@ you can rely on it appropriately. The reference for every setting is in
   for reads as best-effort, and the `denyRead` list (`~/.ssh`, `~/.aws`,
   `~/.gnupg`, `~/.netrc`, `~/.git-credentials`, `~/.pypirc`,
   `~/.gem/credentials`, `~/.vault-token`, `~/.password-store`, and pi's own
-  `~/.pi/agent/auth.json` and `oauth.json` by default) as the hard guard. A
+  `~/.pi/agent/auth.json` and `oauth.json`, package and cloud CLI credentials,
+  macOS Keychains, and `**/.env` / `**/.env.*` by default) as the hard guard. A
   denied prompt is a refusal, not containment: a determined agent can read
   the same file through a script it writes into the project. **Deny and
   block** (offered on every out-of-project path prompt) turns that Deny into
@@ -65,10 +66,11 @@ you can rely on it appropriately. The reference for every setting is in
 - **File tools aren't OS-sandboxed.** `read`/`edit`/`write`/… are governed by the
   policy engine and path checks (out-of-project prompt, protected-path backstop,
   per-surface allow/ask/deny), not bubblewrap.
-- **Approved & non-sandboxing commands run unsandboxed.** Anything you confirm,
-  any approved out-of-project command, and everything in a mode with
-  `sandbox.enabled:false` (YOLO) runs with your full permissions. Treat them as
-  fully trusted.
+- **Escape approvals run unsandboxed.** Ordinary in-project command approvals
+  stay sandboxed. Approved out-of-project or privilege-escalation commands,
+  approvals while the sandbox is unavailable, and commands in a mode with
+  `sandbox.enabled:false` (YOLO) run with your full permissions. Treat these
+  commands as fully trusted.
 - **Gating ≠ containment.** The AST/heuristic decides whether to *prompt* and
   whether an approved command runs *unsandboxed*. A missed detection is a missed
   prompt; in-project commands still run sandboxed, so the exposure is a missed
@@ -101,7 +103,8 @@ you can rely on it appropriately. The reference for every setting is in
   allowlist, exactly like approving an out-of-project command. "Allow forever"
   persists to the global config against the stock+global base - a project's
   tighten-only intersection is never baked in.
-- **Local binding is on by default, and on macOS it opens loopback.**
+- **Local binding opens loopback on macOS.** Default and Plan disable it.
+  Build and Container retain it for development servers.
   `sandbox.allowLocalBinding` (default true; a project may set it to false,
   never back to true) lets a sandboxed command listen on a local port that
   this machine can reach while the command runs. On macOS the runtime cannot

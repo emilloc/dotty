@@ -72,7 +72,8 @@ WSL1 has no user namespaces at all; the sandbox reports it as unsupported.
 **macOS.** The sandbox uses the built-in `sandbox-exec` - no extra packages.
 Go tools (`gh`, `kubectl`, `terraform`) need an opt-in switch per mode
 ([docs/sandbox.md](docs/sandbox.md#macos)); loopback services and local
-ports are open unless a mode turns `sandbox.allowLocalBinding` off
+ports are blocked in Default and Plan, and open in Build and Container
+through `sandbox.allowLocalBinding`
 ([docs/sandbox.md](docs/sandbox.md#local-binding)).
 
 **Windows (alpha).** The sandbox is the runtime's native Windows backend:

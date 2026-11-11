@@ -25,7 +25,7 @@ config may do with the key ([configuration.md, Project config](configuration.md#
 | `network.deniedDomains` | string[] | `[]` | Hosts always refused, even when the network is open for the session | may add entries |
 | `insideRoots` | string[] | `[]` | Roots the bash escape heuristic treats as inside, for remote paths named in `ssh` commands and the like ([Inside roots](#inside-roots)). Bash only; no file-tool or sandbox access | may remove entries |
 | `askOnBlockedHost` | boolean | true | Prompt live when bash tries a host outside the allowlist. `false` denies silently | may set `false` |
-| `allowLocalBinding` | boolean | true | A sandboxed command may listen on local ports and this machine may connect to them while the command runs; on macOS also direct loopback TCP, past the proxy ([Local binding](#local-binding)) | may set `false` |
+| `allowLocalBinding` | boolean | false in Default/Plan, true otherwise | A sandboxed command may listen on local ports and this machine may connect to them while the command runs; on macOS also direct loopback TCP, past the proxy ([Local binding](#local-binding)) | may set `false` |
 | `macos.enableWeakerNetworkIsolation` | boolean | unset | macOS only. Allow the `trustd` lookup Go programs need to verify TLS certificates ([macOS](#macos)) | may set `false` |
 | `macos.allowUnixSockets` | string[] | Docker socket paths in Container mode | macOS only. Unix socket paths sandboxed commands may use. A privileged daemon can act outside the sandbox boundaries | may remove entries |
 | `macos.allowAllUnixSockets` | boolean | unset | macOS only. Permit every Unix socket. This can expose privileged host services | may set `false` |
@@ -35,7 +35,9 @@ config may do with the key ([configuration.md, Project config](configuration.md#
 Paths accept `~` and `$HOME`. The stock `denyRead`: `~/.ssh`, `~/.aws`,
 `~/.gnupg`, `~/.netrc`, `~/.git-credentials`, `~/.pypirc`,
 `~/.gem/credentials`, `~/.vault-token`, `~/.password-store`,
-`~/.pi/agent/auth.json`, `~/.pi/agent/oauth.json`.
+`~/.pi/agent/auth.json`, `~/.pi/agent/oauth.json`, `~/.npmrc`,
+`~/.config/gh/hosts.yml`, `~/.config/gcloud`, `~/.azure`, `~/.kube`,
+`~/.docker/config.json`, `~/Library/Keychains`, `**/.env`, and `**/.env.*`.
 
 The runtime has write paths of its own that no config removes: `/tmp/claude`,
 `~/.npm/_logs`, `~/.claude/debug`, and on macOS the user's `$TMPDIR` under
@@ -158,8 +160,9 @@ else grants nothing. In Plan mode the git directories stay read-only.
 
 `sandbox.allowLocalBinding` says whether a sandboxed command may listen on a
 local port and whether this machine may connect to it while the command
-runs: a dev server under test, a preview you open in the browser. It is on
-unless set; a project config may set it to `false`, never back to `true`.
+runs: a dev server under test, a preview you open in the browser. Default and
+Plan set it to `false`. Build and Container leave it on. A project config may
+set it to `false`, never back to `true`.
 Version 2.5.0 spelled it `macos.allowLocalBinding` inside the `sandbox`
 block; that spelling is still read, and an explicit top-level value wins
 over it. What it does differs per platform:

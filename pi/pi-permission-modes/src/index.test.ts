@@ -1135,7 +1135,7 @@ test("defaults audit: stale /perm-init copy warns per field, acknowledge silence
     h.ctx.notices.length = 0;
     await h.pi.emit("session_start", {}, h.ctx);
     const stale = h.ctx.notices.find((n) => /still hold an outdated default/.test(n)) ?? "";
-    assert.match(stale, /7 value\(s\)/); // Six sandbox changes plus the cycleOrder change that adds Container.
+    assert.match(stale, /10 value\(s\)/); // Write roots, secrets, and network for three modes, plus cycleOrder.
     for (const m of ["default", "plan", "build"]) {
       assert.match(stale, new RegExp(`modes\\.${m}\\.sandbox\\.allowWrite still holds the 2\\.0\\.0 to 2\\.2\\.1 default`));
       assert.match(stale, new RegExp(`modes\\.${m}\\.sandbox\\.denyRead still holds the 2\\.0\\.0 to 2\\.3\\.1 default`));

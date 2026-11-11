@@ -1,6 +1,6 @@
 {
   "name": "pi-permission-modes",
-  "version": "2.8.0-dotty.1",
+  "version": "2.8.0-dotty.2",
   "type": "module",
   "description": "Switchable, user-definable permission modes for the pi coding agent. Each mode pairs an OS-level sandbox (bubblewrap, sandbox-exec, native Windows) with an allow / ask / deny policy for every tool. Default, Plan Mode, Build, Container and YOLO ship. Live network prompts, plan approval, background shells with port exposure.",
   "license": "MIT",
@@ -36,6 +36,7 @@
     "!src/**/*.test.ts",
     "schemas/",
     "docs/",
+    "patch-runtime.mjs",
     "permission-mode.defaults.json",
     "defaults-history.json",
     "README.md",
@@ -45,7 +46,7 @@
     "SECURITY.md"
   ],
   "scripts": {
-    "postinstall": "echo 'permission-mode: dependencies installed.'",
+    "postinstall": "node patch-runtime.mjs",
     "test": "node --test \"src/**/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
