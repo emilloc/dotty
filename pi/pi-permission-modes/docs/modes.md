@@ -16,6 +16,7 @@ footer shows the mode, the network state, and their shortcuts, for example
 | **Default** | `ask` for every command; approved in-project commands run sandboxed | reads free; `write` and `edit` ask | `web_search`, tools, and skills ask on first use |
 | **Plan Mode** | `allow`, but the sandbox is read-only, so only read commands work | reads free; only Markdown (`*.md`, `*.markdown`) may be written or edited | the `@plan` system prompt steers the model to write a plan file and render it with `show_plan`; tools and skills ask |
 | **Build** | `allow`, sandboxed | all allowed inside the project | everything allowed |
+| **Blind** | `allow`, sandboxed | all allowed inside the project | No shell network and no web tools. For exercises where the model must not look up answers |
 | **Container** | `allow`, sandboxed with container capabilities | all allowed inside the project | Linux permits Unix sockets and nested user namespaces. macOS permits the standard Docker sockets. Daemon access can escape the sandbox boundaries |
 | **YOLO** | unsandboxed, never prompts | no protected-path backstop | can do anything the current user can |
 

@@ -56,23 +56,28 @@ test("loadStockDefaults: reads the shipped JSON → five modes, correct defaults
   const c = loadStockDefaults((m) => errors.push(m));
   assert.equal(errors.length, 0, errors.join("; ")); // stock file present & valid
   assert.equal(c.defaultMode, "default");
-  assert.deepEqual(c.cycleOrder, ["default", "plan", "build", "container", "yolo"]);
-  assert.deepEqual(Object.keys(c.modes).sort(), ["build", "container", "default", "plan", "yolo"]);
+  assert.deepEqual(c.cycleOrder, ["default", "plan", "build", "blind", "container", "yolo"]);
+  assert.deepEqual(Object.keys(c.modes).sort(), ["blind", "build", "container", "default", "plan", "yolo"]);
   assert.ok(stockDefaultsFile().endsWith("permission-mode.defaults.json"));
 });
 
 test("stock sandbox defaults protect research modes on macOS and Linux", () => {
   const stock = loadStockDefaults();
   for (const platform of ["darwin", "linux"] as const) {
-    for (const name of ["default", "plan", "build", "container"]) {
+    for (const name of ["default", "plan", "build", "blind", "container"]) {
       const profile = stock.modes[name].sandbox;
       const cfg = profileToConfig(profile, platform);
       assert.equal(profile.enabled, true);
-      assert.equal(cfg.network.allowLocalBinding, name === "build" || name === "container" ? true : undefined);
+      assert.equal(cfg.network.allowLocalBinding, name === "build" || name === "blind" || name === "container" ? true : undefined);
       for (const secret of ["~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"]) {
         assert.ok(cfg.filesystem.denyRead.includes(secret), `${platform}/${name}: ${secret}`);
       }
       assert.ok(cfg.network.allowedDomains?.every((host) => !host.includes("*")));
+      if (name === "blind") {
+        assert.deepEqual(cfg.network.allowedDomains, [], `${platform}/blind has no shell network`);
+        assert.equal(profile.askOnBlockedHost, false);
+        continue;
+      }
       for (const host of ["registry.npmjs.org", "pypi.org", "files.pythonhosted.org", "github.com", "api.github.com", "raw.githubusercontent.com", "codeload.github.com", "release-assets.githubusercontent.com"]) {
         assert.ok(cfg.network.allowedDomains?.includes(host), `${platform}/${name}: ${host}`);
       }
@@ -99,7 +104,7 @@ test("loadModeConfig: no files → the five built-in modes", () => {
   const s = sandbox();
   const c = loadModeConfig(s.cwd, s.agentDir, (m) => s.errors.push(m));
   assert.equal(c.defaultMode, "default");
-  assert.deepEqual(Object.keys(c.modes).sort(), ["build", "container", "default", "plan", "yolo"]);
+  assert.deepEqual(Object.keys(c.modes).sort(), ["blind", "build", "container", "default", "plan", "yolo"]);
   assert.equal(s.errors.length, 0);
   s.cleanup();
 });
@@ -252,7 +257,7 @@ test("project: cannot add a mode or change defaults", () => {
 test("malformed JSON keeps prior layer and reports the error", () => {
   const s = sandbox({ global: "{ not valid json " });
   const c = loadModeConfig(s.cwd, s.agentDir, (m) => s.errors.push(m));
-  assert.deepEqual(Object.keys(c.modes).sort(), ["build", "container", "default", "plan", "yolo"]); // defaults intact
+  assert.deepEqual(Object.keys(c.modes).sort(), ["blind", "build", "container", "default", "plan", "yolo"]); // defaults intact
   assert.ok(s.errors.some((e) => /could not parse/.test(e)));
   s.cleanup();
 });
@@ -329,7 +334,7 @@ test("profileToConfig output validates against the runtime's SandboxRuntimeConfi
     assert.doesNotThrow(() => runtimeSchema!.parse(readOnlyOverride(cfg, ["/tmp/pi/s1"])));
     checked.push(name);
   }
-  assert.deepEqual(checked, ["default", "plan", "build", "container"]);
+  assert.deepEqual(checked, ["default", "plan", "build", "blind", "container"]);
   const container = stock.modes.container.sandbox;
   const linuxContainer = profileToConfig(container, "linux");
   assert.equal(linuxContainer.network.allowAllUnixSockets, true);

@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Summarize Pi session journals: context peaks, compactions, tool errors and result sizes.
+
+Usage: journal-stats [SESSIONS_DIR] [--since YYYY-MM-DD]
+Run it after real research sessions to judge the compaction threshold and the output caps.
+"""
+import collections, glob, json, os, sys
+
+args = [a for a in sys.argv[1:] if not a.startswith("--")]
+since = sys.argv[sys.argv.index("--since") + 1] if "--since" in sys.argv else ""
+root = args[0] if args else os.path.expanduser("~/.pi/agent/sessions")
+calls, errors, chars, biggest = (collections.Counter() for _ in range(4))
+print(f"{'session start':<20}{'turns':>6}{'peak input':>12}{'compactions':>13}")
+for path in sorted(glob.glob(os.path.join(root, "*", "*.jsonl"))):
+    entries = [json.loads(line) for line in open(path) if line.strip()]
+    if not entries or entries[0].get("timestamp", "") < since:
+        continue
+    turns = peak = 0
+    for entry in entries:
+        message = entry.get("message") or {}
+        if message.get("role") == "assistant":
+            turns += 1
+            peak = max(peak, (message.get("usage") or {}).get("input", 0))
+        elif message.get("role") == "toolResult":
+            name = message.get("toolName", "?")
+            size = sum(len(part.get("text", "")) for part in message.get("content", []))
+            calls[name] += 1
+            errors[name] += bool(message.get("isError"))
+            chars[name] += size
+            biggest[name] = max(biggest[name], size)
+    compactions = sum(entry.get("type") == "compaction" for entry in entries)
+    print(f"{entries[0]['timestamp'][:16]:<20}{turns:>6}{peak:>12,}{compactions:>13}")
+print(f"\n{'tool':<28}{'calls':>6}{'errors':>8}{'avg chars':>11}{'max chars':>11}")
+for name, count in calls.most_common():
+    print(f"{name:<28}{count:>6}{errors[name]:>8}{chars[name] // count:>11,}{biggest[name]:>11,}")

@@ -1,0 +1,32 @@
+{
+  "name": "pi-task-checkpoint",
+  "version": "0.1.1-dotty.1",
+  "description": "Durable task checkpoints and bounded continuation for Pi with local models and limited context",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "pi": {
+    "extensions": [
+      "./index.js"
+    ]
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kilbiller/pi-task-checkpoint.git"
+  },
+  "private": true
+}

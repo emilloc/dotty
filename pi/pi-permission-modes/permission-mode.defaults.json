@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/permission-mode.schema.json",
   "defaultMode": "default",
-  "cycleOrder": ["default", "plan", "build", "container", "yolo"],
+  "cycleOrder": ["default", "plan", "build", "blind", "container", "yolo"],
   "modes": {
     "default": {
       "label": "Default",
@@ -123,6 +123,36 @@
         "bash": { "*": "allow" },
         "web_search": "allow",
         "tool": "allow",
+        "skill": "allow"
+      }
+    },
+    "blind": {
+      "label": "Blind",
+      "color": "accent",
+      "sandbox": {
+        "enabled": true,
+        "writable": true,
+        "allowWrite": [".", "/tmp/pi"],
+        "denyWrite": [],
+        "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg", "~/.netrc", "~/.git-credentials", "~/.pypirc", "~/.gem/credentials", "~/.vault-token", "~/.password-store", "~/.pi/agent/auth.json", "~/.pi/agent/oauth.json", "~/.npmrc", "~/.config/gh/hosts.yml", "~/.config/gcloud", "~/.azure", "~/.kube", "~/.docker/config.json", "~/Library/Keychains", "**/.env", "**/.env.*"],
+        "network": {
+          "allowedDomains": [],
+          "deniedDomains": []
+        },
+        "askOnBlockedHost": false
+      },
+      "permission": {
+        "path": { "*": "allow" },
+        "external_directory": "ask",
+        "read": "allow",
+        "grep": "allow",
+        "find": "allow",
+        "ls": "allow",
+        "write": "allow",
+        "edit": "allow",
+        "bash": { "*": "allow" },
+        "web_search": "deny",
+        "tool": { "*": "allow", "search_web": "deny", "read_url_content": "deny", "find_text_in_url_content": "deny" },
         "skill": "allow"
       }
     },

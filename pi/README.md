@@ -1,4 +1,4 @@
-# Pi web baseline
+# Pi research harness
 
 This directory contains the portable Pi setup for local models. It does not change `dotty/install.sh`, Pi authentication, model providers, MCP servers, or session storage.
 
@@ -20,7 +20,7 @@ After cloning or pulling dotty, run:
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles and prepares the pinned launcher packages. Its first run needs internet access. It starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, and the Binary Ninja guard without sending a model request. It then links `pi-web` and `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles. Its first run needs internet access. It links the extensions into `~/.pi/agent/extensions`, then starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard without sending a model request. It then links `pi-web` and `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
 
 Setup patches the pinned sandbox runtime to allow the macOS `kern.iossupportversion` read used during command startup. This prevents repeated sandbox denials without changing filesystem or network restrictions. The same patch runs on a normal permission-mode `npm install`.
 
@@ -29,56 +29,87 @@ On a device without the rest of dotty's shell configuration, add `~/.local/bin` 
 ## Start Pi
 
 ```sh
-pi-web
+pi
 ```
 
-Dotty already puts `~/.local/bin` on `PATH`.
+Every session is the full research harness. Nothing needs to be run at session start.
+Setup links four extensions into `~/.pi/agent/extensions`, which Pi loads in each session:
 
-The launcher queries the Spark provider URL in `~/.pi/agent/models.json` and selects its model when
-exactly one model is served. Pass `--model spark/<id>` or `--provider <id>` to bypass that discovery.
+| Extension | What it gives you |
+|---|---|
+| `pi-permission-modes` 2.8.0-dotty.2 | Shell sandbox, permission modes and the network allowlist |
+| `pi-web-search` | `search_web`, `read_url_content`, `find_text_in_url_content` |
+| `pi-task-checkpoint` 0.1.1-dotty.1 | Durable task state under `.pi/task-state/` |
+| `pi-context` | Bounded tool output and the `delegate` tool |
 
-The launcher always loads:
+`pi --no-extensions` starts a session without them. `pi-brief` already does this.
 
-- the pinned local `pi-permission-modes` 2.8.0-dotty.2 extension
-- `pi-task-checkpoint` 0.1.1
-- the pinned local `pi-web-search` extension
+`pi-web` is `pi` plus two things. It selects the model the Spark provider is serving when exactly
+one is loaded, and it appends `research-support.md` to the system prompt. Pass `--model spark/<id>`
+or `--provider <id>` to skip the discovery.
 
-The launcher also appends `research-support.md` through Pi's supported
-`--append-system-prompt` option. It supplies bounded local-search and evidence-format guidance.
-It adds no tool, permission mode, network grant or automatic timeout. Project research workflows
-remain in their existing skills. A new `pi-web` launch reads changes directly from this directory.
-Base `pi` and `pi-brief` are unchanged, and user-supplied append prompts remain supported.
+### Modes
 
-`pi-task-checkpoint` is loaded but inactive at the start of each session. Activate it before a long
-task:
+Left Option+M (Alt+M on Linux) cycles modes. `/perm <mode>` or `pi --perm <mode>` selects one.
 
-```text
-/state --fresh
-```
+| Mode | Use it for |
+|---|---|
+| Default | Everyday work. Edits and commands ask first |
+| Plan | Read-only investigation. Only Markdown can be written |
+| Build | Hands-off work inside the project |
+| Blind | Exercises where the model must not look up answers. No web tools and no shell network |
+| Container | Docker, Podman and image builders. Daemons can act outside the sandbox |
+| YOLO | No sandbox |
 
-Use `/state <task-id>` instead when resuming an existing task. The extension stores operational
-continuation state under the project directory at `.pi/task-state/`. It does not replace the Pi
-session journal or research evidence files.
-
-Add the Binary Ninja binding guard when the task needs it:
-
-```sh
-pi-web \
-    -e ~/dev/dotty/pi/pi-binja-guard
-```
-
-Start container and image-builder work in the explicit Container mode:
-
-```sh
-pi-web --perm container
-```
-
-Default, Plan, and Build block Unix sockets. Container mode permits all Unix
+Default, Plan, Build and Blind block Unix sockets. Container mode permits all Unix
 sockets on Linux because seccomp cannot filter them by path, and it permits the
 standard Docker socket paths on macOS. It also permits nested user namespaces
-for rootless Podman and Buildah. Docker and similar daemons can act outside the
-sandbox's filesystem and network limits, so use Container mode only for tasks
-that require them.
+for rootless Podman and Buildah.
+
+### Context management
+
+Local models work best with a context that stays small. Three things keep it small.
+
+**Compaction and checkpoints.** Add this to `~/.pi/agent/settings.json`, with one entry for each
+model you run. `reserveTokens` is the context window minus 150,000, so Pi compacts at 150,000 tokens.
+
+```json
+"compaction": {
+  "modelOverrides": {
+    "spark/qwen3.8-flash-next": { "reserveTokens": 112144, "keepRecentTokens": 30000 }
+  }
+},
+"piTaskCheckpoint": { "checkpointAt": 0.70, "enforceAt": 0.85, "refreshTools": 16, "refreshTokens": 24000 }
+```
+
+The model is reminded to checkpoint at 105,000 tokens and must checkpoint at 127,500. Lower the
+compaction point to 131,072 (`reserveTokens` 131072 for a 262,144 window) if long sessions drift.
+
+A task starts with every session, so `/state` is optional. `/state <task-id>` resumes an earlier
+task, and `/state off` turns checkpoints off for the session. The local copy of the checkpoint tool
+accepts partial updates: fields the model omits keep their saved value, and over-long values are
+shortened and reported.
+
+**Bounded tool output.** A `read` without a `limit` returns 400 lines and says how to continue. A
+`bash` result over 12,000 characters keeps its first and last 6,000 and names the file that holds
+the full output. The values are constants at the top of `pi-context/index.ts`.
+
+**Delegation.** The model can call `delegate` with one task description. A child `pi` with a fresh
+context does the reading in the read-only sandbox, and only its final answer returns. A Blind
+session's child is also Blind. Default and Plan ask once before the first `delegate` call. Choose
+"allow forever" to stop the prompt.
+
+`./journal-stats` prints context peaks, compactions, tool errors and result sizes from the session
+journals. Run it after real research sessions to judge these values. `--since 2026-11-12` limits it
+to newer sessions.
+
+### Binary Ninja
+
+Add the binding guard when the task needs it, then run `/binja-bind <path>`:
+
+```sh
+pi -e ~/dev/dotty/pi/pi-binja-guard
+```
 
 ## On-command briefings
 
@@ -134,7 +165,7 @@ Pi's default user directory is `~/.pi/agent`, singular. It owns the managed Pi e
 
 The launcher prefers the managed `~/.pi/agent/bin/pi`. It uses a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
 
-The web and permission-mode sources remain under `~/dev/dotty/pi`. Putting them under `~/.pi/agent/extensions` would make them load in every Pi session. Keeping them as explicit local packages preserves the intended split: `pi` keeps its base configuration, while `pi-web` loads the research extensions for that session.
+The extension sources remain under `~/dev/dotty/pi`. Setup links them into `~/.pi/agent/extensions`, so a `git pull` updates every device without a reinstall.
 
 ## Sandbox defaults
 
@@ -196,6 +227,10 @@ Global `~/.pi/agent/settings.json` and project `.pi/settings.json` can override 
 `pi-permission-modes` 2.8.0-dotty.2 is based on `wynainfo/pi-permission-modes`
 2.7.2 commit `652902a`. The local source exposes the runtime's Unix-socket
 controls, adds the explicit Container mode, and tells the model when daemon
-access is blocked or can escape the remaining sandbox boundaries.
+access is blocked or can escape the remaining sandbox boundaries. It also adds the Blind mode.
+
+`pi-task-checkpoint` 0.1.1-dotty.1 is a copy of `kilbiller/pi-task-checkpoint` 0.1.1. The local
+source accepts partial checkpoint updates, shortens over-long values, and starts a task with every
+session. Drop the copy if upstream adopts these changes.
 
 The Binary Ninja guard binds MCP calls to one operator-selected local file. Run `/binja-bind <path>` before asking the model to use Binary Ninja.

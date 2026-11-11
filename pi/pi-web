@@ -10,17 +10,9 @@ while [ -L "$launcher" ]; do
     esac
 done
 root=$(CDPATH= cd -- "${launcher%/*}" && pwd)
-extension=$root/pi-web-search
-permission_extension=$root/pi-permission-modes
 
-if [ ! -d "$extension/node_modules/ipaddr.js" ]; then
-    printf 'Pi web dependencies are missing. Run: %s/setup\n' "$root" >&2
-    exit 1
-fi
-if [ ! -d "$permission_extension/node_modules/@anthropic-ai/sandbox-runtime" ]; then
-    printf 'Pi permission-mode dependencies are missing. Run: %s/setup\n' "$root" >&2
-    exit 1
-fi
+# Extensions load from ~/.pi/agent/extensions (linked by setup), so plain `pi` has them too.
+# This launcher only adds Spark model discovery and the research prompt.
 
 if [ -x "$HOME/.pi/agent/bin/pi" ]; then
     pi_command=$HOME/.pi/agent/bin/pi
@@ -88,7 +80,4 @@ fi
 
 exec "$pi_command" \
     --append-system-prompt "$root/research-support.md" \
-    -e "$permission_extension" \
-    -e npm:pi-task-checkpoint@0.1.1 \
-    -e "$extension/index.ts" \
     "$@"

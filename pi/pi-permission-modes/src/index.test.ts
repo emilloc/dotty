@@ -1099,7 +1099,7 @@ test("/perm: a bare call cycles, an unknown argument prints usage without switch
     assert.match(h.ctx.status, /^Default /);
     await h.perm("buidl");
     assert.match(h.ctx.status, /^Default /);
-    assert.match(h.ctx.notices.at(-1) ?? "", /unknown mode or subcommand "buidl"; usage: \/perm \[default\|plan\|build\|container\|yolo\|init/);
+    assert.match(h.ctx.notices.at(-1) ?? "", /unknown mode or subcommand "buidl"; usage: \/perm \[default\|plan\|build\|blind\|container\|yolo\|init/);
     await h.perm("");
     assert.match(h.ctx.status, /^Plan Mode /);
   } finally {
@@ -1178,7 +1178,7 @@ test("/perm init scaffolds the global config once", { skip }, async () => {
     assert.ok(existsSync(file));
     // The scaffold is the stock defaults, ready to edit.
     const cfg = JSON.parse(readFileSync(file, "utf-8")) as { modes: Record<string, unknown>; $comment?: string };
-    assert.deepEqual(Object.keys(cfg.modes), ["default", "plan", "build", "container", "yolo"]);
+    assert.deepEqual(Object.keys(cfg.modes), ["default", "plan", "build", "blind", "container", "yolo"]);
     assert.match(String(cfg.$comment), /Copied from the pi-permission-modes \d+\.\d+\.\d+(?:-[\w.]+)? stock defaults/);
     assert.equal(Object.keys(cfg)[1], "$comment"); // right after $schema, where a reader sees it first
     // A fresh copy never trips the audit.
@@ -1551,7 +1551,7 @@ test("prompt sections: the headless fallback writes the awareness section only",
 test("docs pointer: every mode names the shipped docs folder; the headless fallback does not", { skip }, async () => {
   const h = await setup();
   try {
-    for (const mode of ["default", "plan", "build", "container", "yolo"]) {
+    for (const mode of ["default", "plan", "build", "blind", "container", "yolo"]) {
       await h.perm(mode);
       const res = await startPrompt(h);
       assert.match(res.systemPrompt, /## permission-mode documentation/, mode);

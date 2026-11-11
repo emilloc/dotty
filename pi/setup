@@ -62,7 +62,25 @@ npm --prefix "$permission_extension" ci \
 
 node "$permission_extension/patch-runtime.mjs"
 
-# Start the real launcher so missing pinned packages are installed before use.
+# Pi loads every extension linked here in each session, so plain `pi` is the full harness.
+extensions_dir=$HOME/.pi/agent/extensions
+mkdir -p "$extensions_dir"
+for name in pi-permission-modes pi-web-search pi-task-checkpoint pi-context; do
+    link=$extensions_dir/$name
+    if [ -L "$link" ]; then
+        if [ "$(readlink "$link")" != "$root/$name" ]; then
+            printf '%s already points elsewhere. Remove it before rerunning setup.\n' "$link" >&2
+            exit 1
+        fi
+    elif [ -e "$link" ]; then
+        printf '%s already exists and was not changed.\n' "$link" >&2
+        exit 1
+    else
+        ln -s "$root/$name" "$link"
+    fi
+done
+
+# Start plain Pi and confirm the linked extensions registered their tools and commands.
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/dotty-pi-check.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT HUP INT TERM
 cat > "$check_dir/check.mjs" <<'JS'
@@ -73,16 +91,16 @@ export default function (pi) {
         const tools = new Set(pi.getAllTools().map((tool) => tool.name));
         const commands = new Set(pi.getCommands().map((command) => command.name));
         const missing = [
-            ...["search_web", "read_url_content", "find_text_in_url_content"].filter((name) => !tools.has(name)),
+            ...["search_web", "read_url_content", "find_text_in_url_content", "delegate"].filter((name) => !tools.has(name)),
             ...["perm", "state", "binja-bind"].filter((name) => !commands.has(name)),
         ];
         writeFileSync(new URL("./result.json", import.meta.url), JSON.stringify({ missing }));
     });
 }
 JS
-PI_SKIP_SPARK_MODEL_DISCOVERY=1 "$root/pi-web" \
+"$pi_command" \
     --mode rpc --no-session --no-context-files --no-skills --no-mcp \
-    --no-extensions --no-prompt-templates --no-themes \
+    --no-prompt-templates --no-themes \
     -e "$root/pi-binja-guard" \
     -e "$check_dir/check.mjs" \
     < /dev/null > /dev/null
@@ -94,7 +112,7 @@ if (!check || check.missing.length) {
     console.error(`Pi extension check failed: ${check ? check.missing.join(", ") : "startup check did not run"}.`);
     process.exit(1);
 }
-console.log("Verified web tools, permission modes, task checkpoints, and the Binary Ninja guard.");
+console.log("Verified web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard.");
 JS
 
 user_bin=$HOME/.local/bin
@@ -114,4 +132,4 @@ for launcher_name in pi-web pi-brief; do
     fi
 done
 
-printf 'Pi web baseline is ready. Run: pi-web or pi-brief TASK_STATE.json RESEARCH.md\n'
+printf 'Pi is ready. Run: pi, pi-web (Spark model discovery), or pi-brief TASK_STATE.json RESEARCH.md\n'
