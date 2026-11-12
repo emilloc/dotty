@@ -6,8 +6,12 @@ Run it after real research sessions to judge the compaction threshold and the ou
 """
 import collections, glob, json, os, sys
 
-args = [a for a in sys.argv[1:] if not a.startswith("--")]
-since = sys.argv[sys.argv.index("--since") + 1] if "--since" in sys.argv else ""
+args = sys.argv[1:]
+since = ""
+if "--since" in args:
+    i = args.index("--since")
+    since = args[i + 1]
+    del args[i:i + 2]
 root = args[0] if args else os.path.expanduser("~/.pi/agent/sessions")
 calls, errors, chars, biggest = (collections.Counter() for _ in range(4))
 print(f"{'session start':<20}{'turns':>6}{'peak input':>12}{'compactions':>13}")
