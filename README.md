@@ -32,6 +32,7 @@ brew install zsh zoxide bat neovim timg fzf ripgrep
 git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
 cp ~/dev/dotty/herdr.config.toml ~/.config/herdr/config.toml    # only if herdr already wrote a stub there
 echo "command = $(brew --prefix)/bin/zsh" > ~/.config/ghostty/local    # Ghostty starts zsh. Bash stays the login shell
+printf 'font-family = ""\nfont-family = Source Code Pro\n' >> ~/.config/ghostty/local   # Menlo is macOS only
 ```
 
 Apply a change:
