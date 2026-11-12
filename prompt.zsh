@@ -39,6 +39,8 @@ export BAT_THEME=gruvbox-dark
 # hide/show the path in this shell only (recording)
 hide() { PROMPT='%F{green}❯%f ' }
 show() { PROMPT='%F{yellow}%~%f %F{green}❯%f ' }
+# cap Pi's memory on Linux (does nothing on macOS)
+source ${${(%):-%x}:A:h}/pi/memory-cap.sh
 # read a pdf as text in nvim: pdf FILE
 pdf() { pdftotext -layout "$1" - | nvim -R - }
 # view a fully rendered pdf inline (Ghostty kitty graphics): pdfv FILE [dpi]
