@@ -119,6 +119,23 @@ modes ask once before the first `delegate` call.
 journals. Run it after real research sessions to judge these values. `--since 2026-11-12` limits it
 to newer sessions.
 
+### Memory cap on Linux
+
+On Linux, `pi` is an alias that starts Pi in a systemd scope limited to 60% of installed memory.
+A script that runs away is killed at the cap, before the desktop freezes, and Pi keeps running.
+Delegated children are inside the same cap. The alias is in `memory-cap.sh`. Setup links it into
+`~/.bashrc.d` for bash, and dotty's `prompt.zsh` sources it for zsh. Open a new shell after setup.
+macOS has no cap.
+
+After a freeze or a session that died, this shows whether memory was the cause and which process
+was killed:
+
+```sh
+journalctl -k | grep -i "out of memory"
+```
+
+Raise `MemoryMax` in `memory-cap.sh` if a legitimate large job is killed.
+
 ### Binary Ninja
 
 Add the binding guard when the task needs it, then run `/binja-bind <path>`:

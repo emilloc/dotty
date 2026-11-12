@@ -87,6 +87,12 @@ if [ ! -e "$modes_file" ]; then
     printf '{\n  "defaultMode": "build",\n  "cycleOrder": ["build", "blind", "container"]\n}\n' > "$modes_file"
 fi
 
+# Bash on Fedora sources ~/.bashrc.d. Zsh gets the same file through dotty's prompt.zsh.
+if command -v systemd-run >/dev/null; then
+    mkdir -p "$HOME/.bashrc.d"
+    ln -sf "$root/memory-cap.sh" "$HOME/.bashrc.d/pi-memory-cap.sh"
+fi
+
 # Start plain Pi and confirm the linked extensions registered their tools and commands.
 check_dir=$(mktemp -d "${TMPDIR:-/tmp}/dotty-pi-check.XXXXXX")
 trap 'rm -rf "$check_dir"' EXIT HUP INT TERM
