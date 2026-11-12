@@ -123,11 +123,13 @@ export function checkpointDue(budget, checkpoint, toolCount) {
 }
 
 export function formatBudget(budget) {
-  const usage = budget.tokens === null ? "unknown (do not assume empty)" : budget.tokens.toLocaleString("en-US") + " tokens";
-  const headroom = budget.remaining === null ? "unknown" : budget.remaining.toLocaleString("en-US") + " tokens";
-  return ["Context usage estimate: " + usage,
-    "Effective window: " + (budget.window ?? "unknown") + "; response reserve: " + budget.reserve,
-    (budget.autoCompaction ? "Expected pi compaction threshold" : "Planning boundary (pi auto-compaction disabled)") + ": " + (budget.limit ?? "unknown"),
-    "Remaining before planning boundary: " + headroom,
-    "Planning budget used: " + (budget.ratio === null ? "unknown" : Math.round(budget.ratio * 100) + "%")].join("\n");
+  const n = value => value === null ? "unknown" : value.toLocaleString("en-US");
+  const used = "Context used: " + (budget.tokens === null ? "unknown (do not assume empty)" : n(budget.tokens) + " tokens");
+  if (!budget.autoCompaction) return [used,
+    "Automatic compaction is off. Checkpoint before the context reaches " + n(budget.limit) + " tokens, then ask the user to run /compact."].join("\n");
+  // Local models read every number here as a hard limit, so the text says what compaction does.
+  return [used,
+    "Pi compacts the context automatically at " + n(budget.limit) + " tokens. Tokens until that compaction: " + n(budget.remaining) + ".",
+    "Compaction is routine. It is not a limit on your work and it does not end the task. After it, your saved checkpoint is given back to you and you continue.",
+    "The tokens until compaction do not restrict what you may start. If a step needs more tokens than remain, checkpoint and start it anyway."].join("\n");
 }

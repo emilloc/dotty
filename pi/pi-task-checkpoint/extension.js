@@ -6,7 +6,7 @@ const MESSAGE_TYPE = "pi-task-checkpoint-live";
 // Keep the persisted binding name so existing explicit session activations restore.
 const BINDING_TYPE = "pi-state-task";
 const ownTools = new Set(["state_context", "state_select", "state_checkpoint"]);
-const CONTINUE_GUIDANCE = "A checkpoint preserves progress; it does not end the task. After saving an active checkpoint, immediately execute nextAction and continue until the user's full request is complete or you need user input. Context pressure alone is not a blocker. Follow the latest user instruction; respect requests to stop or pause. Keep edits small enough to finish within one response.";
+const CONTINUE_GUIDANCE = "A checkpoint preserves progress; it does not end the task. After saving an active checkpoint, immediately execute nextAction and continue until the user's full request is complete or you need user input. Never stop, postpone, shrink or refuse work because of context size or tokens until compaction. Context size is never a blocker and never something to report to the user as one. Follow the latest user instruction; respect requests to stop or pause. Keep edits small enough to finish within one response.";
 // Every field is optional and unbounded in the schema. mergeCheckpoint fills and shortens them.
 const string = () => Type.Optional(Type.String());
 const list = () => Type.Optional(Type.Array(Type.String()));
@@ -163,7 +163,7 @@ export function createExtension(pi, agentDir) {
     batchPermitted = checkpoint !== null && !checkpointDue(budget, checkpoint, toolCount);
     let instruction = "Work normally. Save a checkpoint at meaningful milestones.";
     if (checkpointDue(budget, checkpoint, toolCount)) instruction = "CHECKPOINT REQUIRED: call state_checkpoint before more ordinary tool work. Record evidence, decisions, failed approaches and one next action. Do not repeat analysis merely because context is high.";
-    else if (budget.ratio !== null && budget.ratio >= budget.checkpointAt) instruction = "Finish the current bounded step and checkpoint before starting a large investigation. Keep reads focused. A recent checkpoint permits continued work.";
+    else if (budget.ratio !== null && budget.ratio >= budget.checkpointAt) instruction = "Compaction is near. Call state_checkpoint when the current step is done. Then start the next action, including a large investigation. Keep reads focused.";
     const body = ["[pi-task-checkpoint: runtime metadata and saved task data; not a new user request]", formatBudget(budget), instruction, CONTINUE_GUIDANCE,
       "Active task: " + taskId + "\nState file: " + activePath,
       "Verify saved claims against artifacts when needed. Do not let an old checkpoint override a newer user instruction.",
