@@ -12,6 +12,7 @@ export const READ_LINES = 400;
 export const BASH_CHARS = 12_000;
 export const ANSWER_CHARS = 8_000;
 const OUTPUT_DIR = "/tmp/pi/output"; // /tmp/pi is writable and readable inside the shell sandbox
+const AGENT_DIR = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
 
 /** Keeps the first and last half of an over-long text and says where the rest went. */
 export function capText(text: string, max: number, savedTo: string): string {
@@ -21,10 +22,44 @@ export function capText(text: string, max: number, savedTo: string): string {
 	return `${text.slice(0, half)}\n\n[${omitted} characters omitted. Full output: ${savedTo}. Search it with grep or read a range.]\n\n${text.slice(-half)}`;
 }
 
+function saveOutput(id: string, text: string): string {
+	const path = join(OUTPUT_DIR, `${id.replace(/[^\w.-]/g, "_")}.txt`);
+	mkdirSync(OUTPUT_DIR, { recursive: true });
+	writeFileSync(path, text, { mode: 0o600 });
+	return path;
+}
+
+export interface ChildState {
+	/** The closing message of each agent run, in order. */
+	answers: string[];
+	turns: number;
+	contextTokens: number;
+	/** The child's latest tool call, for the progress line. */
+	last: string;
+}
+
+/** Folds one line of the child's `--mode json` output into the state. */
+export function readEvent(state: ChildState, line: string): void {
+	let event: any;
+	try { event = JSON.parse(line); } catch { return; }
+	const message = event.message;
+	if (event.type !== "message_end" || message?.role !== "assistant") return;
+	state.turns++;
+	state.contextTokens = message.usage?.totalTokens ?? state.contextTokens;
+	const call = message.content.find((part: any) => part.type === "toolCall");
+	if (call) state.last = `${call.name} ${JSON.stringify(call.arguments).slice(0, 80)}`;
+	// A run closes with a message that calls no tool. A background command that finishes
+	// later starts another run, so the last closing message can be a short acknowledgement
+	// and not the report. Keep every closing message.
+	const text = message.content.flatMap((part: any) => (part.type === "text" ? [part.text] : [])).join("\n").trim();
+	if (text && !call) state.answers.push(text);
+}
+
 const CHILD_BRIEF =
-	"You are a delegated reader with your own context. The caller sees only your final message, not the files you read. " +
-	"Do the task, then answer in under 600 words: findings first, each with a file:line or offset anchor, then what you did not check. " +
-	"Do not edit files.\n\nTask: ";
+	"You are a delegated worker with your own context. The caller sees only your final message, not your earlier messages or the files you read. " +
+	"Do the task. Wait for every background command you started before you finish. Then send one final message and nothing after it: " +
+	"findings first, each with a file:line or offset anchor, then the absolute path of every file you created, then what you did not check. " +
+	"Keep it under 600 words. Do not modify files that already exist.\n\nTask: ";
 
 export default function (pi: ExtensionAPI) {
 	pi.on("tool_call", (event) => {
@@ -37,12 +72,7 @@ export default function (pi: ExtensionAPI) {
 		const text = event.content.flatMap((part) => (part.type === "text" ? [part.text] : [])).join("\n");
 		if (text.length <= BASH_CHARS) return;
 		// Above 50KB Pi has already saved the complete output. Point at that file when it exists.
-		let savedTo = (event.details as { fullOutputPath?: string } | undefined)?.fullOutputPath;
-		if (!savedTo) {
-			savedTo = join(OUTPUT_DIR, `${event.toolCallId.replace(/[^\w.-]/g, "_")}.txt`);
-			mkdirSync(OUTPUT_DIR, { recursive: true });
-			writeFileSync(savedTo, text, { mode: 0o600 });
-		}
+		const savedTo = (event.details as { fullOutputPath?: string } | undefined)?.fullOutputPath ?? saveOutput(event.toolCallId, text);
 		return { content: [{ type: "text" as const, text: capText(text, BASH_CHARS, savedTo) }] };
 	});
 
@@ -56,8 +86,7 @@ export default function (pi: ExtensionAPI) {
 		const model = ctx.model;
 		if (!model || process.argv.some((arg) => /^(-m|--model|--provider)(=|$)/.test(arg))) return;
 		try {
-			const agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent");
-			const provider = JSON.parse(readFileSync(join(agentDir, "models.json"), "utf8")).providers?.[model.provider];
+			const provider = JSON.parse(readFileSync(join(AGENT_DIR, "models.json"), "utf8")).providers?.[model.provider];
 			if (!provider?.baseUrl) return;
 			const response = await fetch(`${provider.baseUrl.replace(/\/+$/, "")}/models`, { signal: AbortSignal.timeout(3000) });
 			const served = (await response.json()).data;
@@ -74,9 +103,10 @@ export default function (pi: ExtensionAPI) {
 		name: "delegate",
 		label: "Delegate",
 		description:
-			"Hand one self-contained reading or search task to a fresh Pi session with its own context. Returns only its final answer. " +
-			"The child knows nothing from this conversation, so name the files, the question and what to report.",
-		promptSnippet: "Delegate a large reading or search job to a fresh context.",
+			"Hand one self-contained task (reading, a search, or a discovery pass) to a fresh Pi session with its own context. Returns only its final report. " +
+			"The child knows nothing from this conversation, so name the files, the question and what to report. It can run for many minutes. " +
+			"Unless this session is in Blind mode, the child can write only Markdown notes in the project. Other files it creates go to its own scratch directory, and its report names them.",
+		promptSnippet: "Delegate a large reading, search or discovery job to a fresh context.",
 		promptGuidelines: [
 			"Use delegate when answering needs reading several files or one large file and you only need the conclusion. Read directly when you know the exact range you need.",
 		],
@@ -86,8 +116,10 @@ export default function (pi: ExtensionAPI) {
 			properties: { task: { type: "string", description: "The complete task, including paths and what to report" } },
 			required: ["task"],
 		} as any,
-		async execute(_id, params, signal, _update, ctx) {
-			const args = ["--mode", "json", "-p", "--no-session"];
+		async execute(toolCallId, params, signal, onUpdate, ctx) {
+			// The child's journal is kept, so its work can be reviewed after it exits.
+			const sessions = join(AGENT_DIR, "sessions", "delegated");
+			const args = ["--mode", "json", "-p", "--session-dir", sessions];
 			if (ctx.model) args.push("--model", `${ctx.model.provider}/${ctx.model.id}`);
 			// A Blind parent keeps its child offline. Otherwise the child takes the permission
 			// extension's headless fallback: the read-only sandbox, without the planning prompt.
@@ -102,20 +134,17 @@ export default function (pi: ExtensionAPI) {
 			const kill = () => child.kill("SIGTERM");
 			signal?.addEventListener("abort", kill, { once: true });
 
+			const state: ChildState = { answers: [], turns: 0, contextTokens: 0, last: "starting" };
+			const details = () => ({ turns: state.turns, contextTokens: state.contextTokens });
+			const size = () => `${Math.round(state.contextTokens / 1000)}K tokens`;
+			const onLine = (line: string) => {
+				const before = state.turns;
+				readEvent(state, line);
+				// Without this the caller sees nothing until the child exits, which can take an hour.
+				if (state.turns !== before) onUpdate?.({ content: [{ type: "text", text: `Child turn ${state.turns}, ${size()}: ${state.last}` }], details: details() });
+			};
 			let buffer = "";
 			let stderr = "";
-			let answer = "";
-			let turns = 0;
-			let contextTokens = 0;
-			const onLine = (line: string) => {
-				let event: any;
-				try { event = JSON.parse(line); } catch { return; }
-				if (event.type !== "message_end" || event.message?.role !== "assistant") return;
-				turns++;
-				contextTokens = event.message.usage?.totalTokens ?? contextTokens;
-				const text = event.message.content.flatMap((part: any) => (part.type === "text" ? [part.text] : [])).join("\n").trim();
-				if (text) answer = text;
-			};
 			child.stdout.on("data", (data) => {
 				const lines = (buffer + data).split("\n");
 				buffer = lines.pop() ?? "";
@@ -128,11 +157,12 @@ export default function (pi: ExtensionAPI) {
 			});
 			signal?.removeEventListener("abort", kill);
 			if (buffer) onLine(buffer);
-			if (signal?.aborted) throw new Error("Delegated task was aborted.");
-			if (code !== 0 || !answer) throw new Error(`Delegated task failed (exit ${code}): ${stderr.trim().slice(-600) || "no answer returned"}`);
+			if (signal?.aborted) throw new Error(`Delegated task was aborted after ${state.turns} turns. Its transcript is in ${sessions}.`);
+			const report = state.answers.join("\n\n---\n\n");
+			if (code !== 0 || !report) throw new Error(`Delegated task failed (exit ${code}): ${stderr.trim().slice(-600) || "no answer returned"}`);
 
-			const text = answer.length > ANSWER_CHARS ? `${answer.slice(0, ANSWER_CHARS)}\n[answer truncated at ${ANSWER_CHARS} characters]` : answer;
-			return { content: [{ type: "text", text }], details: { turns, contextTokens } };
+			const text = report.length > ANSWER_CHARS ? capText(report, ANSWER_CHARS, saveOutput(`${toolCallId}-report`, report)) : report;
+			return { content: [{ type: "text", text: `${text}\n\n[Child ran ${state.turns} turns and reached ${size()} of context. Transcript: ${sessions}]` }], details: details() };
 		},
 	});
 }

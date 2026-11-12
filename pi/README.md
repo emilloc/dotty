@@ -94,9 +94,17 @@ shortened and reported.
 the full output. The values are constants at the top of `pi-context/index.ts`.
 
 **Delegation.** The model can call `delegate` with one task description. A child `pi` with a fresh
-context does the reading in the read-only sandbox, and only its final answer returns. A Blind
-session's child is also Blind. Default and Plan ask once before the first `delegate` call. Choose
-"allow forever" to stop the prompt.
+context does the work, and only its final report returns. While the child runs, the tool call shows
+its turn count, context size and latest command. Press Esc to stop it.
+
+The child runs in the read-only sandbox. It can read the project and write Markdown notes there.
+Every other file it creates goes to its own scratch directory, `/tmp/pi/<child-session-id>/`, and
+its report names those files by absolute path. Move what you want to keep into the project, because
+scratch directories are removed after 7 days. A Blind session's child is also Blind, and can write
+in the project.
+
+The child's journal is saved under `~/.pi/agent/sessions/delegated/`. Default and Plan ask once
+before the first `delegate` call. Choose "allow forever" to stop the prompt.
 
 `./journal-stats` prints context peaks, compactions, tool errors and result sizes from the session
 journals. Run it after real research sessions to judge these values. `--since 2026-11-12` limits it
