@@ -105,7 +105,7 @@ export default function (pi: ExtensionAPI) {
 		description:
 			"Hand one self-contained task (reading, a search, or a discovery pass) to a fresh Pi session with its own context. Returns only its final report. " +
 			"The child knows nothing from this conversation, so name the files, the question and what to report. It can run for many minutes. " +
-			"Unless this session is in Blind mode, the child can write only Markdown notes in the project. Other files it creates go to its own scratch directory, and its report names them.",
+			"The child runs in this session's permission mode. From Default and Plan it is read-only: it can write only Markdown notes in the project, and other files it creates go to its own scratch directory, which its report names.",
 		promptSnippet: "Delegate a large reading, search or discovery job to a fresh context.",
 		promptGuidelines: [
 			"Use delegate when answering needs reading several files or one large file and you only need the conclusion. Read directly when you know the exact range you need.",
@@ -121,10 +121,13 @@ export default function (pi: ExtensionAPI) {
 			const sessions = join(AGENT_DIR, "sessions", "delegated");
 			const args = ["--mode", "json", "-p", "--session-dir", sessions];
 			if (ctx.model) args.push("--model", `${ctx.model.provider}/${ctx.model.id}`);
-			// A Blind parent keeps its child offline. Otherwise the child takes the permission
-			// extension's headless fallback: the read-only sandbox, without the planning prompt.
+			// The child gets the authority this session already has without asking the user, so it
+			// runs in the same mode. Default asks before every command and Plan carries a planning
+			// prompt, and a child can use neither. From those two it takes the permission
+			// extension's headless fallback: the read-only sandbox.
 			const env: NodeJS.ProcessEnv = { ...process.env, PI_DELEGATE_CHILD: "1" };
-			if (env.PI_PERMISSION_MODE === "blind") args.push("--perm", "blind");
+			const mode = env.PI_PERMISSION_MODE;
+			if (mode && mode !== "default" && mode !== "plan") args.push("--perm", mode);
 			delete env.PI_PERMISSION_MODE;
 			args.push(CHILD_BRIEF + params.task);
 

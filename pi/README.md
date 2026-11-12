@@ -97,11 +97,12 @@ the full output. The values are constants at the top of `pi-context/index.ts`.
 context does the work, and only its final report returns. While the child runs, the tool call shows
 its turn count, context size and latest command. Press Esc to stop it.
 
-The child runs in the read-only sandbox. It can read the project and write Markdown notes there.
-Every other file it creates goes to its own scratch directory, `/tmp/pi/<child-session-id>/`, and
-its report names those files by absolute path. Move what you want to keep into the project, because
-scratch directories are removed after 7 days. A Blind session's child is also Blind, and can write
-in the project.
+The child runs in the session's permission mode, so it can do what the session can already do
+without asking you. Switch to Build before delegating work that produces files, such as an
+extraction. From Default and Plan the child is read-only: it can read the project and write Markdown
+notes there, and every other file it creates goes to its own scratch directory,
+`/tmp/pi/<child-session-id>/`. Its report names those files by absolute path. Scratch directories
+are removed after 7 days, and on Linux `/tmp` is often kept in memory, so move what you want to keep.
 
 The child's journal is saved under `~/.pi/agent/sessions/delegated/`. Default and Plan ask once
 before the first `delegate` call. Choose "allow forever" to stop the prompt.
