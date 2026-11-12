@@ -49,18 +49,26 @@ gone, because plain `pi` now does everything it did.
 
 ### Modes
 
-Left Option+M (Alt+M on Linux) cycles modes. `/perm <mode>` or `pi --perm <mode>` selects one.
+A session starts in Build. Left Option+M (Alt+M on Linux) cycles the three everyday modes:
 
 | Mode | Use it for |
 |---|---|
-| Default | Everyday work. Edits and commands ask first |
-| Plan | Read-only investigation. Only Markdown can be written |
-| Build | Hands-off work inside the project |
-| Blind | Exercises where the model must not look up answers. No web tools and no shell network |
+| Build | Everyday work. No prompts inside the project. The sandbox limits writes to the project, hides credential files, and filters the network |
+| Blind | Exercises where the model must not look up answers. Build without web tools or shell network |
 | Container | Docker, Podman and image builders. Daemons can act outside the sandbox |
-| YOLO | No sandbox |
 
-Default, Plan, Build and Blind block Unix sockets. Container mode permits all Unix
+Three more modes exist and are selected by name, with `/perm <mode>` or `pi --perm <mode>`:
+
+| Mode | Use it for |
+|---|---|
+| `default` | Untrusted code or tasks. Asks before every command and edit |
+| `plan` | Read-only investigation. Only Markdown can be written |
+| `yolo` | No sandbox. For a precise task you leave running and trust fully |
+
+Setup writes this choice to `~/.pi/agent/permission-mode/permission-mode.json` when that file does
+not exist. Edit `defaultMode` and `cycleOrder` there to change it.
+
+Build, Blind, Default and Plan block Unix sockets. Container mode permits all Unix
 sockets on Linux because seccomp cannot filter them by path, and it permits the
 standard Docker socket paths on macOS. It also permits nested user namespaces
 for rootless Podman and Buildah.
@@ -98,14 +106,14 @@ context does the work, and only its final report returns. While the child runs, 
 its turn count, context size and latest command. Press Esc to stop it.
 
 The child runs in the session's permission mode, so it can do what the session can already do
-without asking you. Switch to Build before delegating work that produces files, such as an
-extraction. From Default and Plan the child is read-only: it can read the project and write Markdown
+without asking you. In Build it writes into the project. From `default` and `plan` the child is
+read-only: it can read the project and write Markdown
 notes there, and every other file it creates goes to its own scratch directory,
 `/tmp/pi/<child-session-id>/`. Its report names those files by absolute path. Scratch directories
 are removed after 7 days, and on Linux `/tmp` is often kept in memory, so move what you want to keep.
 
-The child's journal is saved under `~/.pi/agent/sessions/delegated/`. Default and Plan ask once
-before the first `delegate` call. Choose "allow forever" to stop the prompt.
+The child's journal is saved under `~/.pi/agent/sessions/delegated/`. The `default` and `plan`
+modes ask once before the first `delegate` call.
 
 `./journal-stats` prints context peaks, compactions, tool errors and result sizes from the session
 journals. Run it after real research sessions to judge these values. `--since 2026-11-12` limits it
