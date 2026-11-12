@@ -1,6 +1,6 @@
 # dotty
 
-Terminal setup for Ghostty, herdr, zsh and nvim on macOS and Ubuntu. Plain config files, no plugin managers.
+Terminal setup for Ghostty, herdr, zsh and nvim on macOS, Ubuntu and Bazzite. Plain config files, no plugin managers.
 
 ## tl;dr
 
@@ -23,6 +23,15 @@ curl -fsSL https://herdr.dev/install.sh | sh
 git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
 echo 'font-family = DejaVu Sans Mono' > ~/.config/ghostty/local
 chsh -s "$(command -v zsh)"                               # takes effect on the next login
+```
+
+Bazzite (Fedora atomic). The system image is read-only, so tools come from the preinstalled Homebrew. Install Ghostty and herdr first.
+
+```sh
+brew install zsh zoxide bat neovim timg fzf ripgrep
+git clone https://github.com/emilloc/dotty.git ~/dev/dotty && ~/dev/dotty/install.sh
+cp ~/dev/dotty/herdr.config.toml ~/.config/herdr/config.toml    # only if herdr already wrote a stub there
+echo "command = $(brew --prefix)/bin/zsh" > ~/.config/ghostty/local    # Ghostty starts zsh. Bash stays the login shell
 ```
 
 Apply a change:
