@@ -20,11 +20,9 @@ After cloning or pulling dotty, run:
 ~/dev/dotty/pi/setup
 ```
 
-The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles. Its first run needs internet access. It links the extensions into `~/.pi/agent/extensions`, then starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard without sending a model request. It then links `pi-brief` into `~/.local/bin`. Rerunning setup preserves model configuration and authentication.
+The setup requires Pi 1.4.0 or newer, Node.js 22.19 or newer, and npm. It installs the production dependencies pinned in the web-search and permission-mode lockfiles. Its first run needs internet access. It links the extensions into `~/.pi/agent/extensions`, then starts an ephemeral Pi session to verify web tools, permission modes, task checkpoints, delegation, and the Binary Ninja guard without sending a model request. Rerunning setup preserves model configuration and authentication.
 
 Setup patches the pinned sandbox runtime to allow the macOS `kern.iossupportversion` read used during command startup. This prevents repeated sandbox denials without changing filesystem or network restrictions. The same patch runs on a normal permission-mode `npm install`.
-
-On a device without the rest of dotty's shell configuration, add `~/.local/bin` to `PATH`.
 
 ## Start Pi
 
@@ -42,7 +40,7 @@ Setup links four extensions into `~/.pi/agent/extensions`, which Pi loads in eac
 | `pi-task-checkpoint` 0.1.1-dotty.1 | Durable task state under `.pi/task-state/` |
 | `pi-context` | Bounded tool output, the `delegate` tool, and loaded-model selection |
 
-`pi --no-extensions` starts a session without them. `pi-brief` already does this.
+`pi --no-extensions` starts a session without them.
 
 Each session starts on the model your inference server has loaded. Pi asks the server of the default
 provider in `models.json`, and switches when exactly one model is served and it differs from
@@ -112,59 +110,11 @@ Add the binding guard when the task needs it, then run `/binja-bind <path>`:
 pi -e ~/dev/dotty/pi/pi-binja-guard
 ```
 
-## On-command briefings
-
-Run `pi-brief` after a milestone is complete or the accompanying notes have a substantial
-update. It accepts task state and a text record from any domain, and opens a separate
-interactive Pi session for orientation and follow-up questions. `RESEARCH.md` below
-is an example filename; the second argument can be any text notes file.
-
-```sh
-~/dev/dotty/pi/pi-brief /path/to/.pi/task-state/task-id.json /path/to/RESEARCH.md
-```
-
-The next `pi/setup` run also links `pi-brief` into `~/.local/bin`. Node.js must be on
-`PATH`. The launcher uses your global Pi default model and existing provider
-credentials. It calls base Pi with tools, extensions, MCP, skills, prompt templates,
-and project context files disabled. The prompt lives in `briefing-prompt.md`.
-Pi starts in the temporary input directory so unrelated project settings and working
-directory names do not supply context for the briefing.
-The initial response explains the purpose, decisive evidence, its implications, and
-the recorded next step. It usually targets 150–300 words. Ask follow-up questions to
-explore unfamiliar concepts or supporting detail.
-
-Both records are captured before Pi starts. Their original paths, SHA-256 hashes,
-task revision, and capture time accompany the input. The launcher rejects malformed
-task state, empty research records, and changes detected during capture. These checks
-cannot prove both files describe the same milestone. Invoke it after both writers
-have finished. There is no file watcher or checkpoint-triggered generation.
-
-Pi stores the conversation, including the captured input, under
-`~/.pi/agent/sessions/briefings/` (or the corresponding `PI_CODING_AGENT_DIR`). Temporary
-input copies are removed when Pi exits normally. The launcher leaves the research
-files unchanged. The briefing stays in the conversation in this prototype. It does
-not write `BRIEFING.md`. Start a new briefing when you need a fresh snapshot.
-
-To revisit a saved briefing with the same restrictions:
-
-```sh
-pi --session-dir ~/.pi/agent/sessions/briefings --resume \
-    --offline --no-tools --no-extensions --no-mcp --no-skills \
-    --no-context-files --no-prompt-templates \
-    --system-prompt "$(cat ~/dev/dotty/pi/briefing-prompt.md)"
-```
-
-Run the launcher checks without contacting a model:
-
-```sh
-node --test ~/dev/dotty/pi/tests/pi-brief.test.cjs
-```
-
 ## Pi directories
 
 Pi's default user directory is `~/.pi/agent`, singular. It owns the managed Pi executable, settings, models, authentication, MCP configuration, sessions, installed packages, and user extensions. This setup does not create `~/.pi/agents` or a second agent directory.
 
-Setup and `pi-brief` prefer the managed `~/.pi/agent/bin/pi`. They use a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
+Setup prefers the managed `~/.pi/agent/bin/pi`. It uses a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
 
 The extension sources remain under `~/dev/dotty/pi`. Setup links them into `~/.pi/agent/extensions`, so a `git pull` updates every device without a reinstall.
 
