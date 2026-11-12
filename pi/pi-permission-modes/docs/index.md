@@ -8,7 +8,7 @@ what you read to change the configuration.
 | You want to | Read |
 |---|---|
 | Know which file to edit, what a project config may change, why a warning about outdated defaults appears | [configuration.md](configuration.md) |
-| Understand the five stock modes, define your own, control which mode pi starts in, approve a plan | [modes.md](modes.md) |
+| Understand the six stock modes, define your own, control which mode pi starts in, approve a plan | [modes.md](modes.md) |
 | Write `allow` / `ask` / `deny` rules, understand why a tool call prompted or was blocked, protected paths, session grants, "Deny and block" | [permissions.md](permissions.md) |
 | Tune the OS sandbox: writable paths, denied reads, `allowRead` carve-outs, scratch directory, violations, platform notes | [sandbox.md](sandbox.md) |
 | Allow a host, understand the live network prompt and `/net`, authenticate git inside the sandbox | [network.md](network.md) |

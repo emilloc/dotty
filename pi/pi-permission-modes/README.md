@@ -5,8 +5,8 @@
 
 Switchable, **user-definable** permission modes for the [pi](https://pi.dev)
 coding agent. A mode bundles an **OS-level sandbox profile** with an
-**allow / ask / deny policy** for every tool the agent has. Five modes ship
-by default: **Default -> Plan Mode -> Build -> Container -> YOLO**. You can retune
+**allow / ask / deny policy** for every tool the agent has. Six modes ship
+by default: **Default -> Plan Mode -> Build -> Blind -> Container -> YOLO**. You can retune
 them or add your own.
 
 It is the most complete integration of Anthropic's `sandbox-runtime` for pi,
@@ -72,7 +72,7 @@ WSL1 has no user namespaces at all; the sandbox reports it as unsupported.
 **macOS.** The sandbox uses the built-in `sandbox-exec` - no extra packages.
 Go tools (`gh`, `kubectl`, `terraform`) need an opt-in switch per mode
 ([docs/sandbox.md](docs/sandbox.md#macos)); loopback services and local
-ports are blocked in Default and Plan, and open in Build and Container
+ports are blocked in Default and Plan, and open in Build, Blind and Container
 through `sandbox.allowLocalBinding`
 ([docs/sandbox.md](docs/sandbox.md#local-binding)).
 

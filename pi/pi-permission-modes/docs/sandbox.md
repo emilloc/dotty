@@ -307,7 +307,7 @@ later connection by filesystem path. This switch therefore permits every Unix
 socket visible inside the sandbox. Docker, containerd, BuildKit, and similar
 daemon sockets can act outside the sandbox's filesystem and network limits.
 Enable it only in a mode whose name and prompt make that authority explicit.
-The stock Container mode enables it. Default, Plan, and Build keep Unix sockets
+The stock Container mode enables it. Default, Plan, Build, and Blind keep Unix sockets
 blocked.
 
 ## Windows
@@ -458,7 +458,7 @@ which TLS clients work.
 | WSL1 | none | no user namespaces; reported as unsupported, the sandboxed modes prompt instead |
 | Windows | the runtime's native backend (alpha): a separate local account, a firewall rule keyed on it, NTFS permission entries | needs Git for Windows and one elevated `/sandbox install`; see [Windows](#windows). Until then the sandboxed modes prompt instead |
 
-When the sandbox is unavailable, Default, Plan, and Build show
+When the sandbox is unavailable, Default, Plan, Build, and Blind show
 `(!) <reason>` in the footer, and in-project bash that would have been
 sandboxed prompts for confirmation instead. You are never silently
 unprotected.

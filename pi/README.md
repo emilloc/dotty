@@ -1,6 +1,6 @@
 # Pi research harness
 
-This directory contains the portable Pi setup for local models. It does not change `dotty/install.sh`, Pi authentication, model providers, MCP servers, or session storage.
+This directory contains the portable Pi research setup for local models. After setup, plain `pi` is the whole harness. It does not change `dotty/install.sh`, Pi authentication, model providers, MCP servers, or session storage.
 
 ## Set up one device
 
@@ -162,28 +162,29 @@ node --test ~/dev/dotty/pi/tests/pi-brief.test.cjs
 
 ## Pi directories
 
-Pi's default user directory is `~/.pi/agent`, singular. It owns the managed Pi executable, settings, models, authentication, MCP configuration, sessions, installed packages, and user extensions. This baseline does not create `~/.pi/agents` or a second agent directory.
+Pi's default user directory is `~/.pi/agent`, singular. It owns the managed Pi executable, settings, models, authentication, MCP configuration, sessions, installed packages, and user extensions. This setup does not create `~/.pi/agents` or a second agent directory.
 
-The launcher prefers the managed `~/.pi/agent/bin/pi`. It uses a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
+Setup and `pi-brief` prefer the managed `~/.pi/agent/bin/pi`. They use a `pi` found on `PATH` only when the managed executable is absent. This prevents an older global npm installation from taking precedence.
 
 The extension sources remain under `~/dev/dotty/pi`. Setup links them into `~/.pi/agent/extensions`, so a `git pull` updates every device without a reinstall.
 
 ## Sandbox defaults
 
 Default and Plan disable local binding. On macOS this also blocks direct shell
-connections to host loopback services. Build retains local binding for development
-servers. The Pi process's model connection is outside the shell sandbox and is
+connections to host loopback services. Build, Blind and Container retain local binding for
+development servers. The Pi process's model connection is outside the shell sandbox and is
 unchanged. Linux keeps its separate sandbox network namespace.
 
 Sandboxed modes deny reads of common credential stores and `.env` / `.env.*`
 files, including example files. Reads elsewhere remain denylist-based. Inherited
 credential environment variables and host-side extensions are not isolated by
-these file rules. Keep secrets out of the launcher environment.
+these file rules. Keep secrets out of the environment you start `pi` from.
 
 Shell network defaults allow exact GitHub source/download and package-registry
 hosts, without domain wildcards. Allow additional hosts per task with the network
 prompt or `/net allow <domain>`. Prefer session grants over "Allow forever" and
-keep `/net open` exceptional. Web tools use their own public-address checks.
+keep `/net open` exceptional. Blind allows no shell network hosts and does not offer the network
+prompt. Web tools use their own public-address checks.
 Use Container mode only when the task requires daemon access.
 
 In Ghostty, Left Option+M cycles modes on macOS and Alt+M does so on Linux.
@@ -219,7 +220,7 @@ Keep these outside dotty:
 - Binary Ninja licensing data
 - Pi session journals and research evidence
 
-Global `~/.pi/agent/settings.json` and project `.pi/settings.json` can override any web baseline value through their `pi-web-search` object.
+Global `~/.pi/agent/settings.json` and project `.pi/settings.json` can override any web tool value through their `pi-web-search` object.
 
 ## Source
 

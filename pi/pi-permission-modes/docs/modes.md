@@ -1,7 +1,7 @@
 # Modes
 
 A mode is one JSON object: a sandbox profile plus a permission policy, with
-a label and a few switches. Five ship by default. All of them are data and
+a label and a few switches. Six ship by default. All of them are data and
 can be retuned or replaced in the global config
 ([configuration.md](configuration.md)).
 

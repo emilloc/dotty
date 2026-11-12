@@ -7,7 +7,7 @@ layer on top of each other.
 
 | Layer | Path | Authority |
 |---|---|---|
-| Stock defaults | `permission-mode.defaults.json`, shipped with the extension | The baseline: the five built-in modes |
+| Stock defaults | `permission-mode.defaults.json`, shipped with the extension | The baseline: the six built-in modes |
 | Global config | `~/.pi/agent/permission-mode/permission-mode.json` | Full authority: redefine built-in modes, add modes, set `defaultMode` and `cycleOrder`, tune plan approval |
 | Project config | `<project>/.pi/permission-mode.json` | Tighten-only: may only make an existing mode stricter |
 
@@ -126,7 +126,7 @@ until the shipped defaults change again.
 {
   "$schema": "https://raw.githubusercontent.com/wynainfo/pi-permission-modes/main/schemas/permission-mode.schema.json",
   "defaultMode": "default",
-  "cycleOrder": ["default", "plan", "build", "container", "yolo"],
+  "cycleOrder": ["default", "plan", "build", "blind", "container", "yolo"],
   "plan": { "approveMode": "build" },
   "modes": {
     "default": {                        // values here are illustrative - run /perm init for the real defaults

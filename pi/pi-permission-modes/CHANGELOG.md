@@ -7,6 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- **Blind mode.** A sandboxed mode with an empty shell network allowlist, no
+  network prompt, and the web tools denied. It is for exercises where the model
+  must not look up answers.
 - **Container mode and explicit Unix-socket controls.** Container mode keeps
   normal filesystem and network sandboxing while enabling the capabilities
   Docker and image builders need. Linux permits Unix sockets and nested user

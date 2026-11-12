@@ -7,7 +7,7 @@ This Pi extension binds Binary Ninja MCP calls to one operator-selected local fi
 Start Pi with the extension:
 
 ```bash
-~/dev/dotty/pi/pi-web -e ~/dev/dotty/pi/pi-binja-guard
+pi -e ~/dev/dotty/pi/pi-binja-guard
 ```
 
 For one fixed target, open it in Binary Ninja and bind the same exact local file in Pi:
