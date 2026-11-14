@@ -13,7 +13,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import os, { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { SandboxController, bashCustomConfig, commandLauncher, processViolations, createSandboxedBashOps, networkFiltered, runtimeExtrasFor, runtimeInstallDir, withDeniedReads, withRuntimeExtras, writeCommandFile } from "./sandbox.ts";
+import { SandboxController, commandFilesDir, bashCustomConfig, commandLauncher, processViolations, createSandboxedBashOps, networkFiltered, runtimeExtrasFor, runtimeInstallDir, withDeniedReads, withRuntimeExtras, writeCommandFile } from "./sandbox.ts";
 import { profileToConfig } from "./config-load.ts";
 
 const quote: ((xs: readonly string[]) => string) | undefined = await import("@anthropic-ai/sandbox-runtime/dist/utils/shell-quote.js")
@@ -355,7 +355,7 @@ test("runtime extras: runtime dir re-opened; a real worktree's git dirs writable
   const base = realpathSync(mkdtempSync(path.join(tmpdir(), "perm-extras-")));
   const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd, stdio: "ignore" });
   try {
-    assert.deepEqual(runtimeExtrasFor(base, "/opt/rt"), { allowRead: ["/opt/rt"], allowWrite: [], denyWrite: [] });
+    assert.deepEqual(runtimeExtrasFor(base, "/opt/rt"), { allowRead: ["/opt/rt", commandFilesDir()], allowWrite: [], denyWrite: [] });
     assert.deepEqual(runtimeExtrasFor(base, "C:\\rt", "win32").allowRead, [], "no grant on the runtime's package on Windows");
     const main = path.join(base, "main");
     mkdirSync(main);
@@ -366,7 +366,7 @@ test("runtime extras: runtime dir re-opened; a real worktree's git dirs writable
     const gitdir = path.join(main, ".git", "worktrees", "wt");
     const common = path.join(main, ".git");
     const ex = runtimeExtrasFor(wt, "");
-    assert.deepEqual(ex.allowRead, []);
+    assert.deepEqual(ex.allowRead, [commandFilesDir()]);
     assert.deepEqual(ex.allowWrite, [gitdir, common]);
     assert.ok(ex.denyWrite.includes(path.join(wt, ".git")), "the gitfile itself cannot be rewritten");
     for (const f of [path.join(gitdir, "gitdir"), path.join(gitdir, "commondir"), path.join(common, "hooks"), path.join(common, "config")]) {
@@ -378,7 +378,7 @@ test("runtime extras: runtime dir re-opened; a real worktree's git dirs writable
     const evil = path.join(base, "evil");
     mkdirSync(evil);
     writeFileSync(path.join(evil, ".git"), `gitdir: ${os.homedir()}\n`);
-    assert.deepEqual(runtimeExtrasFor(evil, ""), { allowRead: [], allowWrite: [], denyWrite: [path.join(evil, ".git")] });
+    assert.deepEqual(runtimeExtrasFor(evil, ""), { allowRead: [commandFilesDir()], allowWrite: [], denyWrite: [path.join(evil, ".git")] });
 
     // Folded into configs; a read-only run does NOT keep the git dirs writable.
     const profile = { enabled: true, writable: true, allowWrite: ["."], denyRead: ["~"], allowRead: ["."] };

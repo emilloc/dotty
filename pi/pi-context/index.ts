@@ -1,7 +1,7 @@
 // Keeps a local model's context small: bounded tool output, and a `delegate` tool that
 // moves large reading jobs into a child Pi process with its own context. It also starts
 // each session on the model the local inference server has loaded.
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -57,7 +57,9 @@ export function readEvent(state: ChildState, line: string): void {
 
 const CHILD_BRIEF =
 	"You are a delegated worker with your own context. The caller sees only your final message, not your earlier messages or the files you read. " +
-	"Do the task. Wait for every background command you started before you finish. Then send one final message and nothing after it: " +
+	"Do the task. Run any command that can take longer than one minute in the background and check on it, so that you stay reachable. " +
+	"The user may send you a message while you work. Follow it, then continue the task. " +
+	"Wait for every background command you started before you finish. Then send one final message and nothing after it: " +
 	"findings first, each with a file:line or offset anchor, then the absolute path of every file you created, then what you did not check. " +
 	"Keep it under 600 words. Do not modify files that already exist.\n\nTask: ";
 
@@ -77,7 +79,23 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// A child must not delegate again, and it already runs on its parent's model.
-	if (process.env.PI_DELEGATE_CHILD) return;
+	if (process.env.PI_DELEGATE_CHILD) {
+		// The parent forwards what the user types during the delegation. Pi delivers it to the
+		// model after the tool call that is running. The channel must not keep the child alive.
+		process.on("message", (text) => pi.sendUserMessage(`Message from the user, sent while you work:\n${text}`, { deliverAs: "steer" }));
+		process.channel?.unref();
+		return;
+	}
+
+	// A delegation is one long tool call, so a steering message would wait in this session's
+	// queue until the child exits. Pass it to the running children as well. It stays queued
+	// here, so this session also reads it when the child returns.
+	const children = new Map<ChildProcess, number>(); // messages forwarded to each child
+	pi.on("input", (event, ctx) => {
+		if (event.streamingBehavior !== "steer" || !children.size) return;
+		for (const [child, sent] of children) if (child.connected && child.send(event.text)) children.set(child, sent + 1);
+		if (ctx.hasUI) ctx.ui.notify("Sent to the delegated task. It reads the message after its current tool call.", "info");
+	});
 
 	// A local server serves one model at a time. When the session's model is not the loaded
 	// one, switch to it. Only providers from models.json are asked, and an explicit --model
@@ -133,7 +151,8 @@ export default function (pi: ExtensionAPI) {
 
 			const script = process.argv[1];
 			const [command, commandArgs] = script && existsSync(script) ? [process.execPath, [script, ...args]] : ["pi", args];
-			const child = spawn(command, commandArgs, { cwd: ctx.cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+			const child = spawn(command, commandArgs, { cwd: ctx.cwd, env, stdio: ["ignore", "pipe", "pipe", "ipc"] });
+			children.set(child, 0);
 			const kill = () => child.kill("SIGTERM");
 			signal?.addEventListener("abort", kill, { once: true });
 
@@ -159,13 +178,16 @@ export default function (pi: ExtensionAPI) {
 				child.on("error", (error) => { stderr += String(error); resolve(1); });
 			});
 			signal?.removeEventListener("abort", kill);
+			const forwarded = children.get(child) ?? 0;
+			children.delete(child);
 			if (buffer) onLine(buffer);
 			if (signal?.aborted) throw new Error(`Delegated task was aborted after ${state.turns} turns. Its transcript is in ${sessions}.`);
 			const report = state.answers.join("\n\n---\n\n");
 			if (code !== 0 || !report) throw new Error(`Delegated task failed (exit ${code}): ${stderr.trim().slice(-600) || "no answer returned"}`);
 
 			const text = report.length > ANSWER_CHARS ? capText(report, ANSWER_CHARS, saveOutput(`${toolCallId}-report`, report)) : report;
-			return { content: [{ type: "text", text: `${text}\n\n[Child ran ${state.turns} turns and reached ${size()} of context. Transcript: ${sessions}]` }], details: details() };
+			return { content: [{ type: "text", text: `${text}\n\n[Child ran ${state.turns} turns and reached ${size()} of context. Transcript: ${sessions}]` +
+				(forwarded ? `\n[The user sent ${forwarded} message(s) during this run. The child already received them.]` : "") }], details: details() };
 		},
 	});
 }

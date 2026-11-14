@@ -105,6 +105,11 @@ the full output. The values are constants at the top of `pi-context/index.ts`.
 context does the work, and only its final report returns. While the child runs, the tool call shows
 its turn count, context size and latest command. Press Esc to stop it.
 
+To steer a running delegation, type a message and press Enter. Pi passes it to every running child,
+which reads it after the tool call it is in. The session also keeps the message and reads it when
+the child returns. Alt+Enter queues a message for the session only, for after the task. A child
+runs long commands in the background so that it stays reachable.
+
 The child runs in the session's permission mode, so it can do what the session can already do
 without asking you. In Build it writes into the project. From `default` and `plan` the child is
 read-only: it can read the project and write Markdown
@@ -193,6 +198,21 @@ Nested summarization is disabled. The active local model reads and analyzes the 
 Search terms go to DuckDuckGo. Page URLs go to their destination sites. Pi records tool calls and results when session storage is enabled. Never put credentials, private file contents, or unpublished finding details in external queries.
 
 The document reader blocks private and reserved addresses, pins each connection to its checked DNS result, and checks every redirect. It handles static HTML, text, Markdown, XML, and JSON. It reports blocked pages, likely JavaScript-only shells, truncation, and rate limits. It does not render JavaScript or extract PDF text.
+
+## SiftRank
+
+The optional [SiftRank skill](pi-siftrank/README.md) ranks files or records
+through the existing Spark forward. Install it once per device from this directory:
+
+```sh
+python3 pi-siftrank/setup.py --model qwen3.8-flash-next --port 18888
+```
+
+This pins a separate ranking profile, installs the CLI and tokenizer cache, links
+the skill, and grants only the configured local port in Build, Default, and Plan.
+It does not start a model server or change Pi's conversational model. Start a new
+Pi session after installation. Use `/skill:siftrank` or ask Pi to rank a collection.
+Blind and offline research modes remain blocked.
 
 ## Local state
 

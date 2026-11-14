@@ -693,6 +693,9 @@ export function commandFilesDir(): string | undefined {
  */
 export function runtimeExtrasFor(cwd: string, runtimeDir: string | undefined = runtimeInstallDir(), platform: string = process.platform, nodeDir?: string): RuntimeExtras {
   const extras: RuntimeExtras = { allowRead: runtimeDir && platform !== "win32" ? [runtimeDir] : [], allowWrite: [], denyWrite: [] };
+  // A strict /tmp read boundary must still allow this process's command transport.
+  const commands = platform !== "win32" ? commandFilesDir() : undefined;
+  if (commands) extras.allowRead.push(commands);
   // The node that runs pi, readable inside the sandbox even under a strict
   // home: the Linux port relay of a background shell runs on it.
   if (nodeDir && platform === "linux" && !extras.allowRead.includes(nodeDir)) extras.allowRead.push(nodeDir);

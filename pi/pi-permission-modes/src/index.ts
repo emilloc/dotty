@@ -1554,6 +1554,9 @@ export default async function (pi: ExtensionAPI) {
         }
         return undefined;
       }
+      if (!sandbox.ready && !ctx.hasUI) {
+        return { block: true, reason: `OS sandbox unavailable: ${sandbox.warn ?? "initialization did not complete"}. Command not executed. This was a runtime failure, not a user denial.` };
+      }
       // Real AST when available: judge each (possibly nested) command against the
       // bash surface AND the cross-cutting path gate (joined string + each token,
       // see decideBashCommand), most-restrictive across the chain; detect

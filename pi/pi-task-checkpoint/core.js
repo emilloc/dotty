@@ -1,5 +1,5 @@
 import { readFile, readdir, mkdir, rename, writeFile, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { randomUUID } from "node:crypto";
 
 export const MAX_STATE_CHARS = 12000;
@@ -10,9 +10,17 @@ export async function readJson(path, fallback = null) {
   catch (error) { if (error.code === "ENOENT") return fallback; throw error; }
 }
 
+// A trusted launcher can keep checkpoints outside model-writable project files.
+export function stateDirectory(cwd) {
+  const override = process.env.PI_TASK_STATE_DIR;
+  if (!override) return join(cwd, ".pi", "task-state");
+  if (!isAbsolute(override)) throw new Error("PI_TASK_STATE_DIR must be an absolute path.");
+  return override;
+}
+
 export function taskPath(cwd, taskId) {
   if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(taskId)) throw new Error("Task ID must be 1–80 lowercase letters, digits, hyphens or underscores.");
-  return join(cwd, ".pi", "task-state", taskId + ".json");
+  return join(stateDirectory(cwd), taskId + ".json");
 }
 
 export function validateState(state) {
@@ -63,7 +71,7 @@ export async function readState(path) {
 }
 
 export async function listActiveStates(cwd) {
-  const directory = join(cwd, ".pi", "task-state");
+  const directory = stateDirectory(cwd);
   let files;
   try { files = await readdir(directory, { withFileTypes: true }); }
   catch (error) { if (error.code === "ENOENT") return []; throw error; }
